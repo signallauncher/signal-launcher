@@ -1,0 +1,14 @@
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/
+.env
+*.log
+# Updater signing keys never go into the repository
+*.key
+*.key.pub
+.tauri/
+
+.claude/
+
+website/

@@ -1,0 +1,42 @@
+[package]
+name = "signal-launcher"
+version = "0.2.0"
+description = "Signal Launcher — Minecraft launcher"
+authors = ["Signal Launcher"]
+edition = "2021"
+
+[lib]
+# The `_lib` suffix avoids a name clash with the binary on Windows.
+name = "signal_launcher_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["protocol-asset"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+md5 = "0.7"
+futures-util = "0.3"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+flate2 = "1"
+fastnbt = "2"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+sysinfo = { version = "0.39.6", default-features = false, features = ["system", "disk"] }
+base64 = "0.23.1"
+png = "0.18.1"
+discord-rich-presence = "1.1.0"
+tauri-plugin-dialog = "2"
+sha1 = "0.11.0"
+tauri-plugin-updater = "2"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
+
+[target."cfg(windows)".dependencies]
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Security_Cryptography"] }

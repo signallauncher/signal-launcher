@@ -1,0 +1,55 @@
+# Release: push a tag like v0.2.0 → GitHub builds the signed Windows installers and a release
+# with latest.json, which installed launchers read to offer the update.
+#
+# Repository secrets (Settings → Secrets and variables → Actions):
+#   TAURI_SIGNING_PRIVATE_KEY           — contents of %USERPROFILE%\.tauri\signal-launcher.key
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  — the key password (empty if the key has none)
+#   SIGNAL_CF_API_KEY                   — your CurseForge API key (optional: without it the catalog shows Modrinth only)
+#   SIGNAL_MS_CLIENT_ID                 — optional, the Mojang-approved Azure app id
+#   SIGNAL_DISCORD_APP_ID               — optional, the Discord application id
+# The OpenRouter key is deliberately not here: anything built into a public .exe can be extracted.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # The updater looks for latest.json in this repository's releases.
+          SIGNAL_GITHUB_REPO: ${{ github.repository }}
+          SIGNAL_MS_CLIENT_ID: ${{ secrets.SIGNAL_MS_CLIENT_ID }}
+          SIGNAL_DISCORD_APP_ID: ${{ secrets.SIGNAL_DISCORD_APP_ID }}
+          SIGNAL_CF_API_KEY: ${{ secrets.SIGNAL_CF_API_KEY }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: Signal Launcher ${{ github.ref_name }}
+          releaseBody: Что нового — см. описание выпуска.
+          releaseDraft: true
+          prerelease: false
+          includeUpdaterJson: true

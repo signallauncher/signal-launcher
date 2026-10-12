@@ -1,0 +1,2059 @@
+<!-- Signal Launcher UI. Exported from the design canvas; rendered by src/dc-runtime.js. -->
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#07090C}
+*,*::before,*::after{box-sizing:border-box}
+a{color:#7FD08F;text-decoration:none}a:hover{color:#A9E6B6}
+button,input,select{font:inherit;color:inherit}
+option{background:#11161D;color:#ECEFF3}
+:focus-visible{outline:2px solid #5BD07A;outline-offset:2px}
+.glass{border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);box-shadow:inset 0 1px 0 rgba(255,255,255,0.05),0 24px 48px -28px rgba(0,0,0,0.75)}
+.nav{display:flex;align-items:center;gap:14px;width:100%;min-height:52px;padding:0 12px 0 8px;border-radius:14px;border:1px solid transparent;background:transparent;color:#AEB7C4;font-size:15px;font-weight:500;cursor:pointer;text-align:left;transition:background .2s,color .2s,border-color .2s,box-shadow .25s,transform .2s}
+.nav .ico{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;flex:none;background:rgba(255,255,255,0.05);transition:background .2s,color .2s,box-shadow .25s}
+.nav:hover{background:rgba(255,255,255,0.06);color:#FFFFFF;box-shadow:0 12px 26px -18px rgba(0,0,0,0.95);transform:translateX(2px)}
+.nav:hover .ico{background:rgba(255,255,255,0.1)}
+.nav.is-active{background:rgba(91,208,122,0.1);border-color:rgba(91,208,122,0.3);color:#FFFFFF;box-shadow:inset 0 1px 0 rgba(255,255,255,0.06),0 14px 30px -18px rgba(91,208,122,0.55)}
+.nav.is-active .ico{background:#2A8040;color:#FFFFFF;box-shadow:0 6px 16px -6px rgba(42,128,64,0.9)}
+.nbadge{margin-left:auto;min-width:22px;height:22px;padding:0 7px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:rgba(91,208,122,0.16);color:#86DDA0;font-size:12px;font-weight:700}
+.side-act{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:68px;padding:8px;border-radius:14px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#C9D0DA;font-size:12px;font-weight:500;cursor:pointer;transition:background .2s,border-color .2s,color .2s,box-shadow .25s,transform .2s}
+.side-act:hover{background:rgba(255,255,255,0.09);border-color:rgba(255,255,255,0.18);color:#FFFFFF;box-shadow:0 12px 26px -18px rgba(0,0,0,0.95);transform:translateY(-1px)}
+.acct{display:flex;align-items:center;gap:12px;height:56px;padding:0 14px 0 10px;border-radius:16px;background:rgba(16,21,28,0.7);border:1px solid rgba(255,255,255,0.09);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);cursor:pointer;text-align:left;transition:background .2s,border-color .2s}
+.acct:hover{background:rgba(28,34,44,0.82);border-color:rgba(255,255,255,0.18)}
+.ghost{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);cursor:pointer;font-size:14px;font-weight:500;color:#ECEFF3;transition:background .2s,border-color .2s,transform .2s}
+.ghost:hover{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);color:#FFFFFF}
+.icon-btn{width:44px;padding:0}
+.light{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:0 20px;border-radius:12px;border:0;background:#F2F4F7;color:#0B0F14;font-weight:600;font-size:14px;cursor:pointer;transition:background .2s,transform .2s}
+.light:hover{background:#FFFFFF;transform:translateY(-1px)}
+.accent{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;color:#FFFFFF;cursor:pointer;min-height:44px;padding:0 18px;border-radius:12px;font-weight:600;font-size:14px;transition:filter .2s,transform .2s}
+.accent:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.accent:disabled{cursor:not-allowed;filter:grayscale(.7);opacity:.45;transform:none}
+.play{border:0;cursor:pointer;transition:filter .2s,transform .15s;box-shadow:inset 0 1px 0 rgba(255,255,255,0.22),inset 0 -4px 0 rgba(0,0,0,0.22),0 14px 34px -14px rgba(0,0,0,0.85)}
+.play:hover{filter:brightness(1.12) saturate(1.1);transform:translateY(-2px)}
+.upload{cursor:pointer}
+.upload:focus-within{outline:2px solid #5BD07A;outline-offset:2px}
+.play:active{transform:translateY(1px)}
+.verbtn{display:flex;align-items:center;gap:12px;width:100%;min-height:68px;padding:10px 14px;border-radius:16px;text-align:left;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);cursor:pointer;transition:background .2s,border-color .2s}
+.verbtn:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.18)}
+.item{display:flex;align-items:center;gap:12px;width:100%;min-height:54px;padding:8px 10px;border-radius:12px;border:0;background:transparent;text-align:left;cursor:pointer;transition:background .15s}
+.item:hover{background:rgba(255,255,255,0.06)}
+.item.is-active{background:rgba(91,208,122,0.09)}
+.card{transition:transform .25s ease,border-color .25s ease}
+.card:hover{transform:translateY(-3px);border-color:rgba(255,255,255,0.18)}
+.news{display:flex;flex-direction:column;border-radius:18px;overflow:hidden;color:#ECEFF3}
+.news:hover{color:#FFFFFF}
+.news svg{transition:transform .5s ease}
+.news:hover svg{transform:scale(1.05)}
+.option{display:flex;align-items:center;gap:14px;width:100%;padding:16px;border-radius:16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);text-align:left;cursor:pointer;transition:background .2s,border-color .2s,transform .2s}
+.option:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.2);transform:translateY(-1px)}
+.seg{min-height:40px;padding:0 16px;border-radius:10px;border:0;background:transparent;color:#A3ADBB;cursor:pointer;font-weight:500;font-size:14px;transition:background .2s,color .2s}
+.seg:hover{color:#FFFFFF}
+.seg.is-active{background:rgba(255,255,255,0.1);color:#FFFFFF}
+.setrow{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;min-height:60px;padding:10px 12px;border-radius:12px;border:0;background:transparent;text-align:left;cursor:pointer;transition:background .15s}
+.setrow:hover{background:rgba(255,255,255,0.05)}
+.sw{flex:none;position:relative;width:44px;height:26px;border-radius:999px;background:rgba(255,255,255,0.14);transition:background .2s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#FFFFFF;transition:transform .22s cubic-bezier(.3,.7,.4,1)}
+.sw.is-on{background:#2A8040}
+.sw.is-on::after{transform:translateX(18px)}
+.field{width:100%;min-height:44px;padding:0 14px;border-radius:12px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);outline:none;color:#ECEFF3;transition:border-color .2s}
+.field:focus{border-color:rgba(91,208,122,0.65)}
+.field::placeholder{color:#7C8696}
+.chip{min-height:34px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:#C9D0DA;font-size:13px;font-weight:500;cursor:pointer;transition:background .2s,border-color .2s,color .2s}
+.chip:hover{background:rgba(255,255,255,0.09);color:#FFFFFF}
+.chip.is-active{background:rgba(91,208,122,0.14);border-color:rgba(91,208,122,0.45);color:#A6E8B8}
+.modbtn{min-height:40px;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer;transition:background .2s,border-color .2s}
+.modbtn.is-installed{background:rgba(91,208,122,0.12);border:1px solid rgba(91,208,122,0.35);color:#86DDA0}
+.modbtn.is-installed:hover{background:rgba(91,208,122,0.2)}
+.modbtn.is-get{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#ECEFF3}
+.modbtn.is-get:hover{background:rgba(255,255,255,0.12)}
+input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.bgimg{background:#0B1410 url(/assets/img/bg-taiga.webp) center/cover no-repeat}
+.skinface{background-image:var(--skin,url(/assets/img/default-skin.png));background-repeat:no-repeat;image-rendering:pixelated}
+.skinprev{background-image:var(--skinprev,var(--skin,url(/assets/img/default-skin.png)));background-repeat:no-repeat;image-rendering:pixelated}
+.p3{position:absolute;left:50%;top:0;width:0;height:0;transform-style:preserve-3d}
+.face{position:absolute;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.stage:active{cursor:grabbing}
+@keyframes armA{0%,100%{transform:rotateX(var(--amp))}50%{transform:rotateX(calc(var(--amp) * -1))}}
+@keyframes armB{0%,100%{transform:rotateX(calc(var(--amp) * -1))}50%{transform:rotateX(var(--amp))}}
+@keyframes breatheBody{0%,100%{transform:scale3d(1,1,1)}50%{transform:scale3d(1.012,1.01,1.07)}}
+@keyframes armIdleR{0%,100%{transform:rotateZ(0deg) rotateX(0deg)}50%{transform:rotateZ(3.5deg) rotateX(-2.5deg)}}
+@keyframes armIdleL{0%,100%{transform:rotateZ(0deg) rotateX(0deg)}50%{transform:rotateZ(-3.5deg) rotateX(2.5deg)}}
+@keyframes spinY{from{transform:rotateX(-8deg) rotateY(0deg)}to{transform:rotateX(-8deg) rotateY(360deg)}}
+@keyframes glassIn{from{opacity:0;transform:translateY(16px) scale(.96);filter:blur(8px)}to{opacity:1;transform:none;filter:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.breathe{animation:breatheBody 3.6s ease-in-out infinite}
+.idle-r{animation:armIdleR 3.6s ease-in-out infinite}
+.idle-l{animation:armIdleL 3.6s ease-in-out infinite}
+.spin-y{animation:spinY 9s linear infinite}
+.veil{animation:fadeIn .25s ease-out}
+.glass-pop{animation:glassIn .36s cubic-bezier(.2,.8,.2,1)}
+.frow{display:flex;align-items:center;gap:12px;padding:8px;border-radius:12px;transition:background .15s}
+.frow:hover{background:rgba(255,255,255,0.05)}
+.pick{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:6px;min-height:44px;padding:10px;border-radius:14px;border:1px solid rgba(255,255,255,0.09);background:rgba(255,255,255,0.04);color:#ECEFF3;cursor:pointer;text-align:center;font-size:13px;font-weight:500;transition:background .2s,border-color .2s,box-shadow .2s}
+.pick:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.2)}
+.pick.is-active{border-color:rgba(91,208,122,0.6);background:rgba(91,208,122,0.1);box-shadow:0 0 0 3px rgba(91,208,122,0.12)}
+.pick-row{flex-direction:row;align-items:center;justify-content:flex-start;gap:10px;text-align:left}
+.dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:18px;border-radius:16px;border:1.5px dashed rgba(255,255,255,0.22);background:rgba(255,255,255,0.03);color:#A3ADBB;cursor:pointer;transition:background .2s,border-color .2s,color .2s}
+.dropzone:hover,.dropzone.is-over{border-color:rgba(91,208,122,0.65);background:rgba(91,208,122,0.08);color:#A6E8B8}
+.dropzone:focus-within{outline:2px solid #5BD07A;outline-offset:2px}
+.shot .shot-actions{opacity:0;transform:translateY(4px);transition:opacity .2s,transform .2s}
+.shot:hover .shot-actions,.shot:focus-within .shot-actions{opacity:1;transform:none}
+.reduce *,.reduce *::before,.reduce *::after{animation:none!important;transition:none!important}
+.swing-a,.swing-b{--amp:30deg}
+.swing-a{animation:armA 1.1s ease-in-out infinite}
+.swing-b{animation:armB 1.1s ease-in-out infinite}
+.idle-r{--sway:4deg;animation:breathe 3.2s ease-in-out infinite}
+.idle-l{--sway:-4deg;animation:breathe 3.2s ease-in-out infinite}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:16px;align-items:stretch}
+.scard{display:flex;flex-direction:column;gap:18px;padding:20px;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0) 45%),rgba(22,27,34,0.65);border:1px solid rgba(255,255,255,0.06);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,0.04),0 22px 44px -30px rgba(0,0,0,0.85)}
+.scard h2{margin:0;font-family:'Unbounded',sans-serif;font-weight:600;font-size:15px;color:#ECEFF3}
+.scard-h{display:flex;align-items:center;gap:12px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.scard-ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;background:rgba(91,208,122,0.12);color:#7FD99A;border:1px solid rgba(91,208,122,0.22)}
+.scard-t{display:flex;flex-direction:column;gap:4px;min-width:0}
+.scard-t>span{font-size:12px;color:#8A94A3}
+.sfield{display:flex;flex-direction:column;gap:8px}
+.slabel{font-size:13px;font-weight:500;color:#C9D0DA}
+.selwrap{position:relative}
+.selwrap::after{content:"";position:absolute;right:16px;top:50%;width:7px;height:7px;margin-top:-6px;border-right:2px solid #8A94A3;border-bottom:2px solid #8A94A3;transform:rotate(45deg);pointer-events:none}
+.sel{appearance:none;-webkit-appearance:none;padding-right:40px;cursor:pointer}
+.sel:hover{border-color:rgba(255,255,255,0.2)}
+.ram-scale{position:relative;height:18px;margin:2px 9px 0;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8A94A3}
+.ram-scale span{position:absolute;top:6px;transform:translateX(-50%);white-space:nowrap}
+.ram-scale span::before{content:"";position:absolute;left:50%;top:-7px;width:1px;height:5px;background:rgba(255,255,255,0.3)}
+.memcard{display:flex;flex-direction:column;gap:10px;margin-top:8px;padding:12px 14px;border-radius:12px;background:rgba(0,0,0,0.22);border:1px solid rgba(255,255,255,0.05)}
+.membar{display:flex;height:10px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,0.05);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.08)}
+.membar span{display:block;height:100%;transition:width .3s ease}
+.tlist{display:flex;flex-direction:column;gap:8px}
+.trow{display:flex;align-items:center;gap:14px;width:100%;min-height:64px;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.025);text-align:left;cursor:pointer;color:#ECEFF3;transition:background .2s,border-color .2s,box-shadow .2s}
+.trow:hover{background:rgba(255,255,255,0.065);border-color:rgba(255,255,255,0.14);box-shadow:0 12px 26px -20px rgba(0,0,0,0.95)}
+.trow.is-on{border-color:rgba(91,208,122,0.2)}
+.trow-ico{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none;background:rgba(255,255,255,0.05);color:#A3ADBB;transition:background .2s,color .2s}
+.trow.is-on .trow-ico{background:rgba(91,208,122,0.14);color:#7FD99A}
+.trow-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.trow-t>span:first-child{font-size:14px;font-weight:500;color:#ECEFF3}
+.trow-t>span:last-child{font-size:12px;color:#8A94A3;line-height:1.4}
+.subrow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:-2px 0 2px 48px;padding:10px 14px;border-radius:12px;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.05)}
+.snote{display:flex;gap:10px;padding:12px 14px;border-radius:12px;font-size:12px;line-height:1.5;color:#A3ADBB;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)}
+.snote.warn{color:#F0C27A;background:rgba(240,185,90,0.08);border-color:rgba(240,185,90,0.25)}
+.dircard{display:flex;align-items:center;gap:14px;padding:14px;border-radius:12px;background:rgba(0,0,0,0.22);border:1px solid rgba(255,255,255,0.05)}
+.dir-ico{width:58px;height:58px;border-radius:14px;display:grid;place-items:center;flex:none;background:rgba(242,194,91,0.12);border:1px solid rgba(242,194,91,0.25);box-shadow:0 12px 24px -14px rgba(242,194,91,0.6)}
+.ped3-top{position:absolute;left:-170px;top:-170px;width:340px;height:340px;border-radius:50%;transform:rotateX(90deg);background:radial-gradient(circle at 50% 45%,rgba(255,255,255,0.22),rgba(225,246,234,0.1) 55%,rgba(150,225,180,0.16) 100%);border:1.5px solid rgba(255,255,255,0.4);box-shadow:inset 0 0 34px rgba(91,208,122,0.28),inset 0 0 0 7px rgba(255,255,255,0.04);backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.ped3-side{position:absolute;left:-15.2px;top:0;width:30.4px;height:22px;background:linear-gradient(180deg,rgba(225,250,235,0.34),rgba(91,208,122,0.42) 65%,rgba(91,208,122,0.7));border-top:1px solid rgba(255,255,255,0.6);box-shadow:0 0 16px rgba(91,208,122,0.4);backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.ped3-glow{position:absolute;left:-250px;top:-250px;width:500px;height:500px;border-radius:50%;transform:translateY(34px) rotateX(90deg);background:radial-gradient(closest-side,rgba(91,208,122,0.55),rgba(91,208,122,0.16) 55%,rgba(91,208,122,0));filter:blur(10px)}
+.ped3-ring{position:absolute;inset:24px;border-radius:50%;border:1px solid rgba(255,255,255,0.24)}
+.ped3-ring2{position:absolute;inset:62px;border-radius:50%;border:1px dashed rgba(91,208,122,0.4)}
+.ped3-tick{position:absolute;left:50%;top:50%;width:4px;height:12px;margin:-6px 0 0 -2px;border-radius:2px;background:rgba(170,242,198,0.8);box-shadow:0 0 8px rgba(91,208,122,0.9)}
+.ped3-shadow{position:absolute;left:50%;top:50%;width:160px;height:110px;margin:-55px 0 0 -80px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,0.5),rgba(0,0,0,0))}
+.ped3-logo{position:absolute;left:50%;bottom:20px;margin-left:-15px;opacity:0.9;filter:drop-shadow(0 0 6px rgba(91,208,122,0.8))}
+.shop-card{display:flex;flex-direction:column;border-radius:20px;overflow:hidden;background:rgba(18,22,29,0.72);border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.05),0 24px 48px -30px rgba(0,0,0,0.9)}
+.shop-art{position:relative;height:184px;overflow:hidden;border-bottom:1px solid rgba(255,255,255,0.08);background:#0B0E13}
+.shop-art img,.shop-art svg{transition:transform .6s ease}
+.shop-card:hover .shop-art img,.shop-card:hover .shop-art svg{transform:scale(1.05)}
+.shop-price{position:absolute;right:12px;top:12px;height:28px;padding:0 12px;border-radius:999px;display:inline-flex;align-items:center;background:rgba(10,12,16,0.62);border:1px solid rgba(255,255,255,0.18);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;color:#FFFFFF}
+.face.both{backface-visibility:visible;-webkit-backface-visibility:visible}
+@keyframes capeSway{0%,100%{transform:rotateX(0deg)}50%{transform:rotateX(-6deg)}}
+.cape-sway{animation:capeSway 3.6s ease-in-out infinite}
+@keyframes haloBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.halo-bob{animation:haloBob 3s ease-in-out infinite}
+.aura{position:absolute;left:50%;top:0;width:0;height:100%;pointer-events:none}
+.pt{position:absolute;opacity:0;animation-name:ptRise;animation-timing-function:ease-out;animation-iteration-count:infinite}
+.pt.dl{animation-name:ptRiseL}
+.pt.dr{animation-name:ptRiseR}
+@keyframes ptRise{0%{transform:translate3d(0,0,0) rotate(0deg);opacity:0}15%{opacity:1}80%{opacity:.85}100%{transform:translate3d(0,-230px,0) rotate(160deg);opacity:0}}
+@keyframes ptRiseL{0%{transform:translate3d(0,0,0) rotate(0deg);opacity:0}15%{opacity:1}80%{opacity:.85}100%{transform:translate3d(-40px,-230px,0) rotate(-140deg);opacity:0}}
+@keyframes ptRiseR{0%{transform:translate3d(0,0,0) rotate(0deg);opacity:0}15%{opacity:1}80%{opacity:.85}100%{transform:translate3d(40px,-230px,0) rotate(200deg);opacity:0}}
+.pt-sq{border-radius:2px}
+.pt-petal{border-radius:70% 0 70% 0}
+.pt-flame{border-radius:50% 50% 50% 50%/60% 60% 40% 40%;filter:blur(1px)}
+.pt-snow{border-radius:50%}
+.cos-item{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);cursor:pointer;text-align:left;color:#ECEFF3;transition:background .2s,border-color .2s,box-shadow .2s,transform .2s}
+.cos-item:hover{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.18);transform:translateY(-1px)}
+.cos-item.is-on{border-color:rgba(91,208,122,0.55);background:rgba(91,208,122,0.08);box-shadow:0 0 0 3px rgba(91,208,122,0.12)}
+.cos-prev{display:block;height:86px;border-radius:10px;border:1px solid rgba(255,255,255,0.08)}
+.ai-result{display:flex;flex-direction:column;gap:14px;padding:18px;border-radius:14px;background:rgba(0,0,0,0.24);border:1px solid rgba(255,255,255,0.07);animation:glassIn .4s cubic-bezier(.2,.8,.2,1)}
+.tagchip{height:26px;padding:0 10px;border-radius:8px;display:inline-flex;align-items:center;font-size:12px;font-weight:600;color:#C9D0DA;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12)}
+.skel{display:block;height:14px;border-radius:7px;background:linear-gradient(90deg,rgba(255,255,255,0.05),rgba(255,255,255,0.13),rgba(255,255,255,0.05));background-size:200% 100%;animation:shimmer 1.2s linear infinite}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+.dlbar{height:10px;border-radius:999px;background:rgba(255,255,255,0.06);overflow:hidden}
+.ai-modal{width:100%;max-width:880px;max-height:85vh;display:flex;flex-direction:column;border-radius:22px;overflow:hidden;background:linear-gradient(180deg,rgba(46,204,113,0.07),rgba(46,204,113,0) 28%),rgba(17,22,29,0.96);border:1px solid rgba(255,255,255,0.1);box-shadow:inset 0 1px 0 rgba(255,255,255,0.08),0 40px 90px -24px rgba(0,0,0,0.9)}
+.ai-modal h2{margin:0;font-family:'Unbounded',sans-serif;font-weight:600;font-size:16px;color:#ECEFF3}
+.ai-head{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,0.07)}
+.ai-ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;background:linear-gradient(135deg,#2ecc71,#27ae60);color:#04210F;box-shadow:0 10px 24px -10px rgba(46,204,113,0.75)}
+.ai-status{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:999px;background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.3);color:#7FE3A6;font-size:12px;font-weight:600}
+.ai-status .dot{width:8px;height:8px;border-radius:50%;background:#2ecc71;animation:aiPulse 2s ease-in-out infinite}
+@keyframes aiPulse{0%,100%{box-shadow:0 0 0 2px rgba(46,204,113,0.3)}50%{box-shadow:0 0 0 6px rgba(46,204,113,0)}}
+.ai-prompt{flex:none;display:flex;flex-direction:column;gap:10px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.05)}
+.ai-body{flex:1;min-height:0;overflow-y:auto;padding:16px 20px 20px;display:flex;flex-direction:column;gap:18px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.15) transparent}
+.ai-body::-webkit-scrollbar{width:8px}
+.ai-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.14);border-radius:8px}
+.ai-foot{flex:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-top:1px solid rgba(255,255,255,0.08);background:rgba(11,15,20,0.94)}
+.ai-sum{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding:16px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07)}
+.ai-group{display:flex;flex-direction:column;gap:8px}
+.ai-group-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 2px;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#7FE3A6}
+.ai-group-h span:last-child{color:#8A94A3;font-weight:500;letter-spacing:0;text-transform:none}
+.ai-group-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:8px}
+.aimod{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.025);text-align:left;cursor:pointer;color:#ECEFF3;transition:background .2s,border-color .2s,opacity .2s}
+.aimod:hover{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.14)}
+.aimod.on{border-color:rgba(46,204,113,0.25)}
+.aimod.off{opacity:0.5}
+.aimod:disabled{cursor:default}
+.ck{width:22px;height:22px;border-radius:7px;flex:none;display:grid;place-items:center;border:1.5px solid rgba(255,255,255,0.28);transition:background .2s,border-color .2s,box-shadow .2s}
+.ck svg{opacity:0;transform:scale(0.6);transition:opacity .15s,transform .2s}
+.ck.on{background:linear-gradient(135deg,#2ecc71,#27ae60);border-color:transparent;box-shadow:0 0 12px rgba(46,204,113,0.45)}
+.ck.on svg{opacity:1;transform:none}
+.btn-emerald{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;padding:0 20px;min-height:48px;background:linear-gradient(135deg,#2ecc71,#27ae60);color:#04210F;font-weight:700;font-size:15px;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,0.35),0 10px 26px -12px rgba(46,204,113,0.8);transition:transform .2s,box-shadow .25s,filter .2s}
+.btn-emerald:hover{transform:translateY(-1px);filter:saturate(1.1) brightness(1.04);box-shadow:inset 0 1px 0 rgba(255,255,255,0.4),0 0 28px rgba(46,204,113,0.55),0 14px 30px -12px rgba(46,204,113,0.9)}
+.btn-emerald:disabled{opacity:0.45;cursor:not-allowed;transform:none;box-shadow:none;filter:none}
+.btn-emerald.lg{min-height:54px;padding:0 26px}
+.dlbar span{display:block;height:100%;background:linear-gradient(90deg,#27ae60,#2ecc71);box-shadow:0 0 14px rgba(46,204,113,0.65);transition:width .15s linear}
+.list-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,max(420px,calc((100% - 16px) / 2))),1fr));gap:16px;max-width:1240px}
+.ping{display:inline-flex;align-items:flex-end;gap:2px;height:15px}
+.ping span{display:block;width:3px;border-radius:1px}
+.pack-art{position:relative;height:120px}
+.pack-ico{position:absolute;left:16px;bottom:-22px;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:#11161D;border:1px solid rgba(255,255,255,0.14);box-shadow:0 10px 20px -10px rgba(0,0,0,0.8)}
+.pack-card .gear{transform-box:fill-box;transform-origin:center}
+.pack-card:hover .gear{animation:spin 6s linear infinite}
+.pack-card:hover .gear.rev{animation-direction:reverse}
+.srv{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px 20px;padding:16px 20px;border-radius:16px;background:rgba(14,18,24,0.7)}
+.srv-main{flex:1 1 240px;min-width:0;display:flex;align-items:center;gap:16px}
+.srv-ico{width:60px;height:60px;border-radius:16px;display:grid;place-items:center;flex:none;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);box-shadow:inset 0 1px 0 rgba(255,255,255,0.06)}
+.srv-side{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:12px}
+@keyframes pop{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}
+.pop{animation:pop .18s ease-out}
+@keyframes rise{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.rise{animation:rise .15s ease-out both}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div ref="{{rootRef}}" class="{{rootCls}}" onPointerMove="{{onRootMove}}" onClickCapture="{{onAnyClick}}" onMouseOverCapture="{{onAnyHover}}" style="position: relative; min-height: 100vh; width: 100%; background: transparent; color: #ECEFF3; font-family: 'Onest', system-ui, sans-serif; font-size: 14px">
+
+<div ref="{{bgLayerRef}}" aria-hidden="true" style="position: fixed; inset: -12px; z-index: 0; will-change: transform">
+<sc-if value="{{bgIsDefault}}" hint-placeholder-val="{{true}}">
+<img src="/assets/img/bg-shader-sunset.webp" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+</sc-if>
+<sc-if value="{{bgIsImage}}" hint-placeholder-val="{{false}}">
+<img src="{{bgFileUrl}}" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+</sc-if>
+<sc-if value="{{bgIsVideo}}" hint-placeholder-val="{{false}}">
+<video src="{{bgFileUrl}}" autoPlay="{{true}}" muted="{{true}}" loop="{{true}}" playsInline="{{true}}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover"></video>
+</sc-if>
+<sc-if value="{{bgIsSolid}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; background: {{bgSolid}}"></div>
+</sc-if>
+</div>
+<div aria-hidden="true" style="position: fixed; inset: 0; z-index: 0; background: rgba(10,15,20,{{bgDimA}}); backdrop-filter: blur({{bgBlur}}px); -webkit-backdrop-filter: blur({{bgBlur}}px)"></div>
+
+<sc-if value="{{anyMenu}}" hint-placeholder-val="{{false}}">
+<button tabindex="-1" data-sfx="close" aria-label="Закрыть меню" onClick="{{closeMenus}}" style="position: absolute; inset: 0; z-index: 30; background: transparent; border: 0; cursor: default"></button>
+</sc-if>
+
+<div class="titlebar" data-tauri-drag-region="true">
+<span class="tb-title" data-tauri-drag-region="true"><svg width="18" height="18" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 3L30 10L17 17L4 10Z" fill="#5BD07A"></path><path d="M4 10L17 17V31L4 24Z" fill="#2A8040"></path><path d="M30 10L17 17V31L30 24Z" fill="#1D5C2E"></path></svg>Signal Launcher</span>
+<span class="tb-ctrls">
+<button class="tb-btn" aria-label="Свернуть" data-sfx="none" onClick="{{winMin}}"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 6h10" stroke="currentColor" stroke-width="1.2"></path></svg></button>
+<button class="tb-btn" aria-label="Развернуть" data-sfx="none" onClick="{{winMax}}"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="1.5" y="1.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1.2"></rect></svg></button>
+<button class="tb-btn close" aria-label="Закрыть" data-sfx="none" onClick="{{winClose}}"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="currentColor" stroke-width="1.2"></path></svg></button>
+</span>
+</div>
+<div style="position: relative; display: flex; flex-wrap: wrap; gap: 16px; padding: 56px 16px 16px; min-height: 100vh; align-items: stretch">
+
+<aside class="glass" style="flex: 1 1 264px; align-self: flex-start; border-radius: 22px; padding: 18px 12px 14px; display: flex; flex-direction: column; gap: 4px; background: rgba(12,16,21,0.7)">
+<div style="display: flex; align-items: center; gap: 12px; padding: 4px 8px 0">
+<svg width="36" height="36" viewBox="0 0 34 34" aria-hidden="true" style="flex: none"><path d="M17 3L29.12 10L17 17L4.88 10Z" fill="#7FE3A1"></path><path d="M4.88 10L17 17V31L4.88 24Z" fill="#3FA35C"></path><path d="M17 17L29.12 10V24L17 31Z" fill="#2A8040"></path><path d="M11.91 14.06L17 11.12V17L11.91 19.94Z" fill="#2A8040"></path><path d="M22.09 14.06L17 11.12V17L22.09 19.94Z" fill="#3FA35C"></path><path d="M17 17L22.09 19.94L17 22.88L11.91 19.94Z" fill="#7FE3A1"></path></svg>
+<span style="font-family: 'Unbounded', sans-serif; font-weight: 500; font-size: 16px; white-space: nowrap; line-height: 1">Signal <span style="color: #8A94A3">Launcher</span></span>
+</div>
+
+<nav aria-label="Разделы лаунчера" style="display: flex; flex-direction: column; gap: 3px; margin-top: 20px">
+<button data-hover="1" class="nav {{nav.play}}" onClick="{{go.play}}"><span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="7" width="19" height="11" rx="5.5"></rect><path d="M7 11v3M5.5 12.5h3M15.5 12h.01M18 13.5h.01"></path></svg></span>Игра</button>
+<button data-hover="1" class="nav {{nav.news}}" onClick="{{go.news}}"><span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h13v14H6a2 2 0 0 1-2-2z"></path><path d="M17 9h3v8a2 2 0 0 1-2 2"></path><path d="M8 9h5M8 13h5M8 16h3"></path></svg></span>Новости<sc-if value="{{hasNewsBadge}}" hint-placeholder-val="{{false}}"><span class="nbadge">{{newsBadge}}</span></sc-if></button>
+<button data-hover="1" class="nav {{nav.installs}}" onClick="{{go.installs}}"><span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5 9-5z"></path><path d="M3 13l9 5 9-5"></path><path d="M3 17.5l9 5 9-5"></path></svg></span>Установки</button>
+<button data-hover="1" class="nav {{nav.skins}}" onClick="{{go.skins}}"><span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4L3 7l2 4 2-1v10h10V10l2 1 2-4-5-3c-.6 1.5-2.1 2.5-4 2.5S8.6 5.5 8 4z"></path></svg></span>Скины</button>
+<button data-hover="1" class="nav {{nav.cosmetics}}" onClick="{{go.cosmetics}}"><span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"></path></svg></span>Косметика<span class="nbadge" style="background: rgba(157,107,255,0.18); color: #CDB8FF">new</span></button>
+<button data-hover="1" class="nav {{nav.servers}}" onClick="{{go.servers}}"><span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="7" rx="2"></rect><rect x="3" y="13" width="18" height="7" rx="2"></rect><path d="M7 7.5h.01M7 16.5h.01"></path></svg></span>Серверы</button>
+<button data-hover="1" class="nav {{nav.mods}}" onClick="{{go.mods}}"><span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"></path><path d="M3 8l9 5 9-5M12 13v8"></path></svg></span>Моды и Сборки</button>
+<button data-hover="1" class="nav {{nav.shots}}" onClick="{{go.shots}}"><span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10" r="1.6"></circle><path d="M21 16l-5-5-8 8"></path></svg></span>Скриншоты</button>
+<button data-hover="1" class="nav {{nav.worlds}}" onClick="{{go.worlds}}"><span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"></path></svg></span>Миры</button>
+</nav>
+
+<div style="height: 1px; background: rgba(255,255,255,0.07); margin: 10px 6px"></div>
+
+<div style="display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin-bottom: 8px">
+<button data-hover="1" class="side-act" onClick="{{openGameDir}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>Папка игры</button>
+</div>
+<div style="height: 1px; background: rgba(255,255,255,0.07); margin: 2px 6px 8px"></div>
+<button data-hover="1" class="nav {{nav.settings}}" onClick="{{go.settings}}"><span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"></path><circle cx="16" cy="6" r="2"></circle><circle cx="10" cy="12" r="2"></circle><circle cx="18" cy="18" r="2"></circle></svg></span>Настройки</button>
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 10px 0; font-size: 12px; color: #8A94A3">
+<span style="font-family: 'JetBrains Mono', monospace">Signal v{{appVersion}}</span>
+</div>
+</aside>
+
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+
+<header style="position: relative; z-index: 40; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px">
+<div style="min-width: 0">
+<h1 style="margin: 0; font-family: 'Unbounded', sans-serif; font-weight: 600; font-size: 22px; letter-spacing: 0.01em">{{pageTitle}}</h1>
+<sc-if value="{{hasPageSub}}" hint-placeholder-val="{{false}}"><p style="margin: 6px 0 0; color: #8A94A3; font-size: 13px">{{pageSub}}</p></sc-if>
+</div>
+<div style="display: flex; align-items: center; gap: 10px">
+<div style="position: relative">
+
+<sc-if value="{{friendsOpen}}" hint-placeholder-val="{{false}}">
+<div class="pop" role="dialog" aria-label="Друзья" style="position: absolute; top: calc(100% + 8px); right: 0; width: 400px; max-width: calc(100vw - 32px); background: rgba(17,22,29,0.97); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 12px; box-shadow: 0 28px 60px -16px rgba(0,0,0,0.85); display: flex; flex-direction: column; gap: 12px">
+<div role="tablist" aria-label="Друзья" style="display: flex; gap: 4px; padding: 4px; border-radius: 13px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08)">
+<button class="seg {{fTabListCls}}" role="tab" aria-selected="{{fTabList}}" onClick="{{setFTabList}}" style="flex: 1">Друзья · {{friendCount}}</button>
+<button class="seg {{fTabAddCls}}" role="tab" aria-selected="{{fTabAdd}}" onClick="{{setFTabAdd}}" style="flex: 1">Добавить друга</button>
+</div>
+
+<sc-if value="{{fTabList}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; gap: 2px; max-height: 380px; overflow-y: auto">
+<sc-for list="{{friendsView}}" as="f" hint-placeholder-count="5">
+<div class="frow">
+<span style="position: relative; flex: none; width: 32px; height: 32px">
+<span style="display: block; width: 32px; height: 32px; border-radius: 8px; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,255,255,0.1); opacity: {{f.fade}}"><span style="display: block; width: 4px; height: 4px; background: {{f.bg}}; box-shadow: {{f.sh}}"></span></span>
+<span style="position: absolute; right: -3px; bottom: -3px; width: 12px; height: 12px; border-radius: 50%; background: {{f.dot}}; box-shadow: 0 0 0 3px #11161D"></span>
+</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<span style="font-weight: 600; font-size: 14px; color: #ECEFF3">{{f.name}}</span>
+<span style="font-size: 12px; color: {{f.textColor}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{f.detail}}</span>
+</span>
+<sc-if value="{{f.canJoin}}" hint-placeholder-val="{{false}}"><button class="ghost" style="min-height: 36px; padding: 0 12px; font-size: 13px">Присоединиться</button></sc-if>
+<sc-if value="{{f.canInvite}}" hint-placeholder-val="{{false}}"><button class="ghost" style="min-height: 36px; padding: 0 12px; font-size: 13px">Пригласить</button></sc-if>
+<sc-if value="{{f.isPending}}" hint-placeholder-val="{{false}}"><button class="ghost icon-btn" aria-label="Отменить заявку" data-sfx="close" onClick="{{f.cancel}}" style="min-height: 36px; width: 36px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></sc-if>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{fTabAdd}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 4px">
+<div style="border-radius: 14px; padding: 14px; background: rgba(91,208,122,0.07); border: 1px solid rgba(91,208,122,0.22); display: flex; align-items: center; gap: 12px">
+<span style="flex: 1; display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 12px; color: #A3ADBB">Ваш код друга</span>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 500; letter-spacing: 0.06em; color: #ECEFF3">{{myCode}}</span>
+</span>
+<button class="ghost" onClick="{{copyCode}}" style="min-height: 40px; font-size: 13px">{{copyLabel}}</button>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="fcode" style="font-size: 13px; color: #C9D0DA">Добавить по коду</label>
+<div style="display: flex; gap: 8px">
+<input id="fcode" class="field" value="{{codeInput}}" onChange="{{onCodeInput}}" placeholder="SGNL-XXXX-XXXX" spellcheck="false" autoComplete="off" style="font-family: 'JetBrains Mono', monospace; text-transform: uppercase">
+<button class="accent" onClick="{{addByCode}}" style="background: {{accent}}; flex: none">Добавить</button>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="fnick" style="font-size: 13px; color: #C9D0DA">Добавить по никнейму</label>
+<div style="display: flex; gap: 8px">
+<input id="fnick" class="field" value="{{nickFriend}}" onChange="{{onNickFriend}}" placeholder="Никнейм игрока" spellcheck="false" autoComplete="off" maxLength="16">
+<button class="accent" onClick="{{addByNick}}" style="background: {{accent}}; flex: none">Отправить</button>
+</div>
+</div>
+<sc-if value="{{hasFriendMsg}}" hint-placeholder-val="{{false}}">
+<span style="font-size: 13px; color: {{friendMsgColor}}">{{friendMsg}}</span>
+</sc-if>
+</div>
+</sc-if>
+</div>
+</sc-if>
+</div>
+<button class="ghost icon-btn" aria-label="Звуки интерфейса" aria-pressed="{{soundOn}}" data-sfx="toggle" onClick="{{toggleSound}}" style="height: 56px; width: 56px; border-radius: 16px">
+<sc-if value="{{soundOn}}" hint-placeholder-val="{{true}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"></path><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"></path></svg></sc-if>
+<sc-if value="{{soundOff}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"></path><path d="M16 9.5l5 5M21 9.5l-5 5"></path></svg></sc-if>
+</button>
+<div style="position: relative">
+<button class="ghost icon-btn" aria-label="{{bellLabel}}" aria-haspopup="dialog" aria-expanded="{{notifOpen}}" data-sfx="open" onClick="{{toggleNotifs}}" style="height: 56px; width: 56px; border-radius: 16px; position: relative">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"></path><path d="M10 20a2 2 0 0 0 4 0"></path></svg>
+<sc-if value="{{hasUnread}}" hint-placeholder-val="{{false}}"><span style="position: absolute; top: 15px; right: 16px; width: 8px; height: 8px; border-radius: 50%; background: #5BD07A; box-shadow: 0 0 0 2px #10151C"></span></sc-if>
+</button>
+<sc-if value="{{notifOpen}}" hint-placeholder-val="{{false}}">
+<div class="pop nf-panel" role="dialog" aria-label="Уведомления">
+<div class="nf-head">
+<span style="font-weight: 600; font-size: 14px">Уведомления</span>
+<sc-if value="{{hasNotifs}}" hint-placeholder-val="{{true}}"><button class="nf-clear" onClick="{{clearNotifs}}">Очистить</button></sc-if>
+</div>
+<sc-if value="{{noNotifs}}" hint-placeholder-val="{{false}}"><div class="nf-empty">Пока пусто. Здесь появятся сбои игры, ошибки, установленные сборки и обновления.</div></sc-if>
+<div class="nf-list">
+<sc-for list="{{notifItems}}" as="nf" hint-placeholder-count="4">
+<div class="{{nf.cls}}">
+<button class="nf-main" onClick="{{nf.open}}">
+<span class="nf-dot" style="background: {{nf.color}}"></span>
+<span class="nf-text">
+<span class="nf-title">{{nf.title}}</span>
+<sc-if value="{{nf.hasMessage}}" hint-placeholder-val="{{true}}"><span class="nf-msg">{{nf.message}}</span></sc-if>
+<span class="nf-when">{{nf.when}}<sc-if value="{{nf.linked}}" hint-placeholder-val="{{false}}"> · <span style="color: #86DDA0">перейти →</span></sc-if></span>
+</span>
+</button>
+<button class="nf-x" aria-label="Убрать из истории" title="Убрать" onClick="{{nf.remove}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</div>
+<div style="position: relative">
+<button class="acct" data-hover="1" data-sfx="open" onClick="{{toggleAcc}}" aria-haspopup="menu" aria-expanded="{{accMenu}}">
+<span style="display: block; width: 36px; height: 36px; border-radius: 9px; overflow: hidden; flex: none; padding: 2px; background: rgba(255,255,255,0.06)"><span style="display: block; width: 32px; height: 32px; border-radius: 7px; overflow: hidden"><span style="display: block; width: 4px; height: 4px; background: {{cur.bg}}; box-shadow: {{cur.sh4}}"></span></span></span>
+<span style="display: flex; flex-direction: column; gap: 3px; min-width: 120px">
+<span style="font-weight: 600; font-size: 14px">{{cur.name}}</span>
+<sc-if value="{{cur.isMs}}" hint-placeholder-val="{{true}}">
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #A3ADBB"><svg width="11" height="11" viewBox="0 0 21 21" aria-hidden="true"><rect x="0" y="0" width="10" height="10" fill="#F25022"></rect><rect x="11" y="0" width="10" height="10" fill="#7FBA00"></rect><rect x="0" y="11" width="10" height="10" fill="#00A4EF"></rect><rect x="11" y="11" width="10" height="10" fill="#FFB900"></rect></svg>Microsoft</span>
+</sc-if>
+<sc-if value="{{cur.isOffline}}" hint-placeholder-val="{{false}}">
+<span style="display: inline-flex; align-self: flex-start; align-items: center; height: 18px; padding: 0 7px; border-radius: 5px; background: rgba(224,164,58,0.14); border: 1px solid rgba(224,164,58,0.32); color: #F0B95A; font-size: 10px; font-weight: 700; letter-spacing: 0.06em">OFFLINE</span>
+</sc-if>
+</span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A3ADBB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: rotate({{accRot}}deg); transition: transform .2s"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+
+<sc-if value="{{accMenu}}" hint-placeholder-val="{{false}}">
+<div class="pop" role="menu" aria-label="Аккаунты" style="position: absolute; top: calc(100% + 8px); right: 0; width: 340px; max-width: calc(100vw - 32px); background: rgba(17,22,29,0.97); border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; padding: 8px; box-shadow: 0 28px 60px -16px rgba(0,0,0,0.8)">
+<div style="padding: 8px 10px 6px; font-size: 11px; color: #8A94A3; letter-spacing: 0.08em; text-transform: uppercase">Аккаунты · {{accountCount}}</div>
+<sc-for list="{{accounts}}" as="a" hint-placeholder-count="3">
+<div class="acc-row">
+<button data-hover="1" class="{{a.rowCls}}" role="menuitemradio" aria-checked="{{a.active}}" onClick="{{a.pick}}">
+<span style="display: block; width: 32px; height: 32px; border-radius: 7px; overflow: hidden; flex: none; box-shadow: 0 0 0 1px rgba(255,255,255,0.1)"><span style="display: block; width: 4px; height: 4px; background: {{a.bg}}; box-shadow: {{a.sh4}}"></span></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<span style="font-weight: 600; font-size: 14px; color: #ECEFF3">{{a.name}}</span>
+<sc-if value="{{a.isMs}}" hint-placeholder-val="{{true}}">
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #A3ADBB"><svg width="11" height="11" viewBox="0 0 21 21" aria-hidden="true"><rect x="0" y="0" width="10" height="10" fill="#F25022"></rect><rect x="11" y="0" width="10" height="10" fill="#7FBA00"></rect><rect x="0" y="11" width="10" height="10" fill="#00A4EF"></rect><rect x="11" y="11" width="10" height="10" fill="#FFB900"></rect></svg>Лицензия Microsoft</span>
+</sc-if>
+<sc-if value="{{a.isOffline}}" hint-placeholder-val="{{false}}">
+<span style="display: inline-flex; align-self: flex-start; align-items: center; height: 18px; padding: 0 7px; border-radius: 5px; background: rgba(224,164,58,0.14); border: 1px solid rgba(224,164,58,0.32); color: #F0B95A; font-size: 10px; font-weight: 700; letter-spacing: 0.06em">OFFLINE</span>
+</sc-if>
+</span>
+<sc-if value="{{a.active}}" hint-placeholder-val="{{false}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5BD07A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+</sc-if>
+</button>
+<button class="{{a.delCls}}" role="menuitem" aria-label="Удалить аккаунт {{a.name}}" title="Удалить аккаунт" onClick="{{a.del}}">
+<sc-if value="{{a.delIdle}}" hint-placeholder-val="{{true}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></sc-if>
+<sc-if value="{{a.delConfirm}}" hint-placeholder-val="{{false}}"><span>Удалить?</span></sc-if>
+</button>
+</div>
+</sc-for>
+<div style="height: 1px; background: rgba(255,255,255,0.08); margin: 6px 4px"></div>
+<button class="item" role="menuitem" data-sfx="open" onClick="{{openAdd}}">
+<span style="width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; flex: none; background: rgba(91,208,122,0.12); color: #5BD07A">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+</span>
+<span style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-weight: 600; font-size: 14px; color: #ECEFF3">Добавить аккаунт</span>
+<span style="font-size: 12px; color: #8A94A3">Microsoft или офлайн-никнейм</span>
+</span>
+</button>
+</div>
+</sc-if>
+</div>
+</div>
+</header>
+
+<section style="flex: 1; display: flex; flex-direction: column; gap: 16px">
+
+<sc-if value="{{showStage}}" hint-placeholder-val="{{true}}">
+<div class="rise" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+<div style="position: relative; flex: 1 1 440px; min-width: 0">
+<div ref="{{stageRef}}" class="stage" onPointerDown="{{dragStart}}" onPointerMove="{{dragMove}}" onPointerUp="{{dragEnd}}" onPointerCancel="{{dragEnd}}" onDoubleClick="{{openSkin}}" aria-label="3D-модель игрока" style="position: relative; width: 100%; height: 620px; perspective: 1400px; cursor: grab; touch-action: none; user-select: none">
+<sc-if value="{{hasAura}}" hint-placeholder-val="{{false}}">
+<div class="aura" aria-hidden="true">
+<sc-for list="{{auraBack}}" as="pt" hint-placeholder-count="11">
+<span class="{{pt.cls}}" style="left: {{pt.x}}px; top: {{pt.y}}px; width: {{pt.s}}px; height: {{pt.s}}px; background: {{pt.c}}; box-shadow: 0 0 {{pt.g}}px {{pt.c}}; animation-duration: {{pt.d}}s; animation-delay: {{pt.dl}}s"></span>
+</sc-for>
+</div>
+</sc-if>
+<div ref="{{modelRef}}" class="p3" style="top: 290px; transform: rotateX(-6deg) rotateY(0deg)">
+<div class="p3" aria-hidden="true" style="transform: translate3d(0px, 199px, 0px)">
+<div class="ped3-glow"></div>
+<sc-for list="{{pedSides}}" as="sd" hint-placeholder-count="36">
+<div class="ped3-side" style="transform: rotateY({{sd.a}}deg) translateZ(169.5px)"></div>
+</sc-for>
+<div class="ped3-top">
+<div class="ped3-ring"></div>
+<div class="ped3-ring2"></div>
+<sc-for list="{{pedTicks}}" as="tk" hint-placeholder-count="12">
+<span class="ped3-tick" style="transform: rotate({{tk.a}}deg) translateY(-150px)"></span>
+</sc-for>
+<div class="ped3-shadow"></div>
+<svg class="ped3-logo" width="30" height="30" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 3L30 10L17 17L4 10Z" fill="#9BE8AE"></path><path d="M4 10L17 17V31L4 24Z" fill="#5BD07A"></path><path d="M30 10L17 17V31L30 24Z" fill="#2A8040"></path></svg>
+</div>
+</div>
+<sc-for list="{{parts}}" as="p" hint-placeholder-count="6">
+<div class="p3" style="transform: translate3d({{p.x}}px, {{p.y}}px, 0px)">
+<div data-part="{{p.part}}" class="p3 {{p.anim}}" style="transform-origin: 0px {{p.pivot}}px 0px">
+<sc-for list="{{p.faces}}" as="f" hint-placeholder-count="6">
+<div class="face skinface" style="left: {{f.l}}px; top: {{f.t}}px; width: {{f.w}}px; height: {{f.h}}px; background-size: {{skinSize}}px {{skinSize}}px; background-position: {{f.bp}}; transform: {{f.tf}}; filter: brightness({{f.light}})"></div>
+</sc-for>
+<div class="p3" style="transform: scale3d({{p.ovs}})">
+<sc-for list="{{p.ov}}" as="f" hint-placeholder-count="6">
+<div class="face skinface" style="left: {{f.l}}px; top: {{f.t}}px; width: {{f.w}}px; height: {{f.h}}px; background-size: {{skinSize}}px {{skinSize}}px; background-position: {{f.bp}}; transform: {{f.tf}}; filter: brightness({{f.light}})"></div>
+</sc-for>
+</div>
+<div class="p3 {{p.accAnim}}" style="transform-origin: {{p.accOrigin}}">
+<sc-for list="{{p.acc}}" as="f" hint-placeholder-count="0">
+<div class="{{f.cls}}" style="left: {{f.l}}px; top: {{f.t}}px; width: {{f.w}}px; height: {{f.h}}px; transform: {{f.tf}}; background: {{f.bg}}; clip-path: {{f.clip}}; border-radius: {{f.r}}; box-shadow: {{f.sh}}"></div>
+</sc-for>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+<sc-if value="{{hasAura}}" hint-placeholder-val="{{false}}">
+<div class="aura" aria-hidden="true">
+<sc-for list="{{auraFront}}" as="pt" hint-placeholder-count="11">
+<span class="{{pt.cls}}" style="left: {{pt.x}}px; top: {{pt.y}}px; width: {{pt.s}}px; height: {{pt.s}}px; background: {{pt.c}}; box-shadow: 0 0 {{pt.g}}px {{pt.c}}; animation-duration: {{pt.d}}s; animation-delay: {{pt.dl}}s"></span>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</div>
+
+<sc-if value="{{isCosmetics}}" hint-placeholder-val="{{false}}">
+<section class="scard" aria-labelledby="h-cos" style="flex: 1 1 380px; max-width: 560px">
+<div class="scard-h">
+<span class="scard-ico" style="background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(91,208,122,0.18)); color: #D7C8FF; border-color: rgba(157,107,255,0.3)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"></path></svg></span>
+<span class="scard-t" style="flex: 1"><h2 id="h-cos">Гардероб косметики</h2><span>Нажмите на предмет — он сразу появится на игроке</span></span>
+<span class="local-badge">Локальный предпросмотр</span>
+</div>
+<div class="snote">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
+<span>Образ виден только в лаунчере на этом компьютере: в игре и другим игрокам его не видно. Выбор сохраняется кнопкой ниже.</span>
+</div>
+<div role="tablist" aria-label="Категории" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 13px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08)">
+<sc-for list="{{cosTabs}}" as="ct" hint-placeholder-count="3">
+<button class="seg {{ct.cls}}" role="tab" aria-selected="{{ct.on}}" onClick="{{ct.pick}}">{{ct.label}}</button>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<sc-for list="{{cosItems}}" as="ci" hint-placeholder-count="4">
+<button class="{{ci.cls}}" aria-pressed="{{ci.on}}" data-sfx="toggle" onClick="{{ci.pick}}">
+<span class="cos-prev" style="background: {{ci.preview}}; box-shadow: {{ci.glow}}"></span>
+<span style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<span style="font-weight: 600; font-size: 14px">{{ci.name}}</span>
+<span style="font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: {{ci.rarityColor}}">{{ci.rarity}}</span>
+</span>
+<span style="font-size: 12px; color: {{ci.stateColor}}">{{ci.state}}</span>
+</button>
+</sc-for>
+</div>
+<div style="flex: 1"></div>
+<div class="snote">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
+<span>{{cosSummary}}</span>
+</div>
+<div style="display: flex; gap: 10px">
+<button class="ghost" data-sfx="close" onClick="{{cosClear}}" style="flex: 1">Снять всё</button>
+<button class="accent" onClick="{{cosSave}}" style="background: {{accent}}; flex: 1">{{cosSaveLabel}}</button>
+</div>
+</section>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{isNews}}" hint-placeholder-val="{{false}}">
+<div class="rise" style="display: flex; flex-direction: column; gap: 14px">
+<div class="glass" style="border-radius: 14px; padding: 10px 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: rgba(12,16,21,0.62); font-size: 13px; color: #A3ADBB">
+<span style="flex: 1 1 280px">{{newsStatus}}</span>
+<button class="ghost" onClick="{{refreshNews}}" style="min-height: 34px; font-size: 13px">{{newsRefreshLabel}}</button>
+</div>
+<sc-if value="{{hasNews}}" hint-placeholder-val="{{true}}">
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px">
+<sc-for list="{{newsTop}}" as="n" hint-placeholder-count="1">
+<button class="news news-btn glass card" onClick="{{n.open}}" style="grid-column: 1 / -1">
+<div style="display: flex; flex-wrap: wrap; width: 100%">
+<div style="flex: 1 1 380px; min-height: 240px; overflow: hidden"><img src="{{n.img}}" alt="{{n.alt}}" style="width: 100%; height: 100%; min-height: 240px; object-fit: cover; display: block"></div>
+<div style="flex: 1 1 320px; padding: 28px; display: flex; flex-direction: column; justify-content: center; gap: 12px">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: {{n.tagColor}}">{{n.tag}}<sc-if value="{{n.isFresh}}" hint-placeholder-val="{{false}}"><span class="news-new">новое</span></sc-if></span>
+<span style="font-family: 'Unbounded', sans-serif; font-size: 22px; font-weight: 600; line-height: 1.25">{{n.title}}</span>
+<span class="news-text" style="font-size: 14px; line-height: 1.55; color: #B5BECA">{{n.text}}</span>
+<span style="font-size: 12px; color: #8A94A3">{{n.date}} · <span style="color: #86DDA0">{{n.cta}} →</span></span>
+</div>
+</div>
+</button>
+</sc-for>
+<sc-for list="{{newsRest}}" as="n" hint-placeholder-count="5">
+<button class="news news-btn glass card" onClick="{{n.open}}">
+<div style="height: 150px; overflow: hidden; width: 100%"><img src="{{n.img}}" alt="{{n.alt}}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; display: block"></div>
+<div style="padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 8px; width: 100%">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: {{n.tagColor}}">{{n.tag}}<sc-if value="{{n.isFresh}}" hint-placeholder-val="{{false}}"><span class="news-new">новое</span></sc-if></span>
+<span style="font-size: 15px; font-weight: 600; line-height: 1.35">{{n.title}}</span>
+<span class="news-text" style="font-size: 13px; line-height: 1.5; color: #A3ADBB">{{n.text}}</span>
+<span style="font-size: 12px; color: #8A94A3">{{n.date}} · <span style="color: #86DDA0">{{n.cta}}</span></span>
+</div>
+</button>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{newsEmpty}}" hint-placeholder-val="{{false}}">
+<div class="glass" style="border-radius: 16px; padding: 28px; text-align: center; color: #A3ADBB; font-size: 14px; background: rgba(14,18,24,0.66)">{{newsEmptyText}}</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{isSkins}}" hint-placeholder-val="{{false}}">
+<div class="rise" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px">
+<button class="card" onClick="{{openSkin}}" data-sfx="open" style="border-radius: 18px; min-height: 230px; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(12,16,21,0.4); border: 1.5px dashed rgba(255,255,255,0.22); cursor: pointer; color: #ECEFF3">
+<span style="width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; background: rgba(91,208,122,0.14); color: #5BD07A"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"></path></svg></span>
+<span style="font-weight: 600; font-size: 15px">Загрузить скин</span>
+<span style="font-size: 12px; color: #8A94A3; text-align: center">PNG 64×64, Classic или Slim</span>
+</button>
+<sc-for list="{{wardrobe}}" as="w" hint-placeholder-count="5">
+<div class="glass card" style="border-radius: 18px; padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 12px; background: rgba(14,18,24,0.66)">
+<span style="display: block; width: 80px; height: 80px; border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 16px 30px -14px rgba(0,0,0,0.8)"><span style="display: block; width: 10px; height: 10px; background: {{w.bg}}; box-shadow: {{w.sh10}}"></span></span>
+<span style="font-weight: 600; font-size: 15px">{{w.label}}</span>
+<span style="font-size: 12px; color: #8A94A3">Classic · 64×64</span>
+<button class="{{w.btnCls}}" onClick="{{w.wear}}" style="width: 100%">{{w.btnLabel}}</button>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isServers}}" hint-placeholder-val="{{false}}">
+<div class="rise" style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-wrap: wrap; gap: 10px">
+<button class="accent" data-sfx="open" onClick="{{openAddServer}}" style="background: {{accent}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Добавить сервер</button>
+<button class="ghost" data-sfx="open" onClick="{{openDirect}}">Прямое подключение</button>
+<button class="ghost" onClick="{{refreshServersBtn}}">{{srvRefreshLabel}}</button>
+</div>
+<sc-if value="{{noServers}}" hint-placeholder-val="{{false}}">
+<div class="glass" style="border-radius: 16px; padding: 28px; text-align: center; color: #A3ADBB; font-size: 14px; background: rgba(14,18,24,0.66)">Добавьте сервер — или зайдите на него в игре: серверы из игры появятся здесь сами.</div>
+</sc-if>
+<div class="list-grid">
+<sc-for list="{{servers}}" as="sv" hint-placeholder-count="4">
+<div class="glass card srv">
+<div class="srv-main">
+<span class="srv-ico" style="color: {{sv.tint}}">
+<sc-if value="{{sv.hasIcon}}" hint-placeholder-val="{{false}}"><img src="{{sv.iconSrc}}" alt="" width="48" height="48" class="srv-favicon"></sc-if>
+<sc-if value="{{sv.noIcon}}" hint-placeholder-val="{{true}}"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="7" rx="2"></rect><rect x="3" y="13" width="18" height="7" rx="2"></rect><path d="M7 7.5h.01M7 16.5h.01M11 7.5h6M11 16.5h6"></path></svg></sc-if></span>
+<div style="min-width: 0; display: flex; flex-direction: column; gap: 6px">
+<span style="font-weight: 600; font-size: 16px; color: #ECEFF3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{sv.name}}</span>
+<span style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #A3ADBB">{{sv.addr}}</span>
+<span class="tagchip" style="height: 20px; font-size: 11px; font-weight: 500">{{sv.ver}}</span>
+</span>
+<span class="srv-motd">{{sv.motd}}</span>
+</div>
+</div>
+<div class="srv-side">
+<div style="display: flex; align-items: center; gap: 10px; font-size: 12px">
+<span class="ping" role="img" aria-label="{{sv.pingLabel}}"><sc-for list="{{sv.bars}}" as="b" hint-placeholder-count="4"><span style="height: {{b.h}}px; background: {{b.c}}; box-shadow: {{b.g}}"></span></sc-for></span>
+<span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px">
+<span style="font-weight: 600; color: {{sv.statusColor}}">{{sv.status}}</span>
+<span style="font-family: 'JetBrains Mono', monospace; color: #8A94A3">{{sv.meta}}</span>
+</span>
+</div>
+<div style="display: flex; gap: 8px; align-items: center">
+<sc-if value="{{sv.canRemove}}" hint-placeholder-val="{{false}}"><button class="{{sv.delCls}}" onClick="{{sv.remove}}" aria-label="Убрать {{sv.name}} из списка" title="Убрать из списка"><sc-if value="{{sv.delIdle}}" hint-placeholder-val="{{true}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></sc-if><sc-if value="{{sv.delConfirm}}" hint-placeholder-val="{{false}}"><span>Удалить?</span></sc-if></button></sc-if>
+<button class="btn-emerald" disabled="{{sv.off}}" onClick="{{sv.connect}}" style="min-height: 44px; padding: 0 18px; font-size: 14px">Подключиться</button>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isShots}}" hint-placeholder-val="{{false}}">
+<div class="rise" style="display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+<span style="font-size: 13px; color: #A3ADBB">{{shotsCount}}</span>
+<button class="ghost" onClick="{{openShots}}">Открыть папку screenshots</button>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 14px">
+<sc-for list="{{shots}}" as="sh" hint-placeholder-count="3">
+<div class="glass card shot" style="border-radius: 16px; overflow: hidden; background: rgba(14,18,24,0.66)">
+<div style="position: relative; aspect-ratio: 16 / 9; overflow: hidden">
+<img src="{{sh.src}}" alt="{{sh.alt}}" style="width: 100%; height: 100%; object-fit: cover; display: block">
+<div class="shot-actions" style="position: absolute; right: 10px; bottom: 10px; display: flex; gap: 6px">
+<button class="ghost icon-btn" aria-label="Открыть снимок" onClick="{{sh.open}}" style="background: rgba(10,13,18,0.75)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-8 8M10 6H5v13h13v-5"></path></svg></button>
+<button class="ghost icon-btn" aria-label="Копировать путь к снимку" onClick="{{sh.copy}}" style="background: rgba(10,13,18,0.75)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"></path></svg></button>
+</div>
+</div>
+<div style="padding: 12px 14px; display: flex; justify-content: space-between; gap: 10px; font-size: 12px">
+<span style="font-family: 'JetBrains Mono', monospace; color: #C9D0DA">{{sh.file}}</span>
+<span style="color: #8A94A3">{{sh.size}}</span>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+<sc-if value="{{noShots}}" hint-placeholder-val="{{false}}">
+<div class="glass" style="border-radius: 16px; padding: 28px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; background: rgba(14,18,24,0.66)">
+<span style="font-weight: 600; font-size: 15px">Скриншотов пока нет</span>
+<span style="font-size: 13px; color: #8A94A3">В игре нажмите F2 — снимок появится здесь.</span>
+</div>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{isWorlds}}" hint-placeholder-val="{{false}}">
+<div class="rise" style="display: flex; flex-direction: column; gap: 12px">
+<div class="glass" style="border-radius: 14px; padding: 12px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: rgba(91,208,122,0.07); border-color: rgba(91,208,122,0.22); font-size: 13px; color: #C9D0DA">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5BD07A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"></path><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg>
+<span style="flex: 1">{{backupStatus}}</span>
+<button class="ghost" onClick="{{backupAll}}" style="min-height: 36px; font-size: 13px">Бэкап всех миров</button>
+</div>
+<div class="list-grid">
+<sc-for list="{{worlds}}" as="wd" hint-placeholder-count="4">
+<div class="glass card" style="border-radius: 16px; padding: 14px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; background: rgba(14,18,24,0.66)">
+<span style="width: 72px; height: 52px; border-radius: 10px; overflow: hidden; flex: none; background: {{wd.tint}}"><img src="{{wd.thumb}}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block; opacity: {{wd.thumbOpacity}}"></span>
+<div style="flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+<span style="font-weight: 600; font-size: 15px">{{wd.name}}</span>
+<span style="font-size: 12px; color: #A3ADBB">{{wd.mode}} · {{wd.diff}} · {{wd.version}}</span>
+<span style="font-size: 12px; color: #8A94A3">Последняя игра: {{wd.last}} · {{wd.size}}</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-if value="{{wd.canTransfer}}" hint-placeholder-val="{{false}}"><button class="ghost" data-sfx="open" onClick="{{wd.transfer}}">Перенести в установку…</button></sc-if>
+<button class="ghost" onClick="{{wd.backup}}">Бэкап</button>
+<button class="accent" style="background: {{accent}}" onClick="{{wd.play}}">Играть</button>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+<sc-if value="{{noWorlds}}" hint-placeholder-val="{{false}}">
+<div class="glass" style="border-radius: 16px; padding: 28px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; background: rgba(14,18,24,0.66)">
+<span style="font-weight: 600; font-size: 15px">Миров пока нет</span>
+<span style="font-size: 13px; color: #8A94A3">Запустите любую установку и создайте мир — он появится здесь.</span>
+</div>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{isShop}}" hint-placeholder-val="{{false}}">
+<div class="rise" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 18px">
+<sc-for list="{{shop}}" as="it" hint-placeholder-count="4">
+<article class="shop-card card">
+<div class="shop-art">
+
+<sc-if value="{{it.isCape}}" hint-placeholder-val="{{false}}">
+<svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block" aria-hidden="true">
+<defs>
+<radialGradient id="capeBg" cx="50%" cy="38%" r="75%"><stop offset="0" stop-color="#1B4A33"></stop><stop offset="0.6" stop-color="#0D1D17"></stop><stop offset="1" stop-color="#070C0A"></stop></radialGradient>
+<linearGradient id="capeFill" x1="0" y1="0" x2="0.7" y2="1"><stop offset="0" stop-color="#7BE59A"></stop><stop offset="0.45" stop-color="#2E9E50"></stop><stop offset="1" stop-color="#124A26"></stop></linearGradient>
+<linearGradient id="capeShade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000000" stop-opacity="0.4"></stop><stop offset="0.45" stop-color="#000000" stop-opacity="0"></stop><stop offset="0.62" stop-color="#FFFFFF" stop-opacity="0.12"></stop><stop offset="1" stop-color="#000000" stop-opacity="0.35"></stop></linearGradient>
+<radialGradient id="capeGlow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#5BD07A" stop-opacity="0.55"></stop><stop offset="1" stop-color="#5BD07A" stop-opacity="0"></stop></radialGradient>
+</defs>
+<rect width="320" height="180" fill="url(#capeBg)"></rect>
+<ellipse cx="160" cy="166" rx="96" ry="16" fill="url(#capeGlow)"></ellipse>
+<path d="M116 24 H204 L220 156 Q206 163 192 156 Q178 149 164 156 Q150 163 136 156 Q122 149 108 156 Q102 159 100 156 Z" fill="url(#capeFill)"></path>
+<path d="M116 24 H204 L220 156 Q206 163 192 156 Q178 149 164 156 Q150 163 136 156 Q122 149 108 156 Q102 159 100 156 Z" fill="url(#capeShade)"></path>
+<path d="M138 30 L134 150 M182 30 L188 150" stroke="#0B2A17" stroke-opacity="0.35" stroke-width="2"></path>
+<rect x="110" y="18" width="100" height="10" rx="3" fill="#1D5C2E"></rect>
+<rect x="110" y="18" width="100" height="3" rx="1.5" fill="#9BE8AE" opacity="0.5"></rect>
+<g transform="translate(160 86)">
+<path d="M0 -20 L18 -10 L0 0 L-18 -10 Z" fill="#E9FBEF"></path>
+<path d="M-18 -10 L0 0 V20 L-18 10 Z" fill="#BFEFCD"></path>
+<path d="M18 -10 L0 0 V20 L18 10 Z" fill="#8FD9A6"></path>
+</g>
+</svg>
+</sc-if>
+
+<sc-if value="{{it.isSkins}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; background: linear-gradient(135deg, #4A2A1A 0%, #6B3A22 45%, #2F5C52 100%)"></div>
+<div style="position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.05) 1px, rgba(0,0,0,0) 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, rgba(0,0,0,0) 1px); background-size: 24px 24px"></div>
+<div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 14px">
+<sc-for list="{{it.previews}}" as="hd" hint-placeholder-count="3">
+<span style="display: flex; flex-direction: column; align-items: center; gap: 8px; transform: translateY({{hd.lift}}px)">
+<span style="display: block; width: 64px; height: 64px; border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 2px rgba(255,255,255,0.12), 0 18px 30px -12px rgba(0,0,0,0.75)"><span style="display: block; width: 8px; height: 8px; background: {{hd.bg}}; box-shadow: {{hd.sh8}}"></span></span>
+<span style="font-size: 11px; font-weight: 600; color: rgba(255,240,225,0.85)">{{hd.label}}</span>
+</span>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{it.isSun}}" hint-placeholder-val="{{false}}">
+<img src="/assets/img/bg-shader-sunset.webp" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 72% 38%">
+<div style="position: absolute; inset: 0; background: repeating-conic-gradient(from 205deg at 88% -8%, rgba(255,214,160,0.16) 0deg 3deg, rgba(255,214,160,0) 3deg 9deg); mix-blend-mode: screen; filter: blur(2px)"></div>
+<div style="position: absolute; inset: 0; background: radial-gradient(60% 70% at 85% 0%, rgba(255,196,120,0.35), rgba(255,196,120,0) 70%)"></div>
+</sc-if>
+
+<sc-if value="{{it.isTheme}}" hint-placeholder-val="{{true}}">
+<div style="position: absolute; inset: 0; background: radial-gradient(120% 110% at 80% 0%, #3A1C70 0%, #160D2C 50%, #0B0816 100%)"></div>
+<div style="position: absolute; left: 26px; right: 26px; top: 24px; bottom: 24px; border-radius: 14px; border: 1px solid rgba(185,166,242,0.45); background: rgba(22,12,40,0.72); box-shadow: 0 0 0 1px rgba(157,107,255,0.2), 0 0 42px rgba(157,107,255,0.55), inset 0 1px 0 rgba(255,255,255,0.1); display: flex; gap: 12px; padding: 12px">
+<div style="width: 52px; display: flex; flex-direction: column; gap: 7px">
+<span style="height: 10px; border-radius: 4px; background: #9D6BFF; box-shadow: 0 0 12px rgba(157,107,255,0.9)"></span>
+<span style="height: 10px; border-radius: 4px; background: rgba(185,166,242,0.25)"></span>
+<span style="height: 10px; border-radius: 4px; background: rgba(185,166,242,0.25)"></span>
+<span style="height: 10px; border-radius: 4px; background: rgba(185,166,242,0.18)"></span>
+</div>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+<span style="height: 10px; width: 55%; border-radius: 4px; background: rgba(255,255,255,0.22)"></span>
+<div style="flex: 1; display: flex; gap: 8px">
+<span style="flex: 1; border-radius: 8px; border: 1px solid rgba(185,166,242,0.35); background: rgba(157,107,255,0.14)"></span>
+<span style="flex: 1; border-radius: 8px; border: 1px solid rgba(185,166,242,0.25); background: rgba(157,107,255,0.08)"></span>
+</div>
+<span style="align-self: flex-end; height: 18px; width: 74px; border-radius: 999px; background: linear-gradient(135deg, #C3A0FF, #7C4DFF); box-shadow: 0 0 16px rgba(157,107,255,0.9)"></span>
+</div>
+</div>
+</sc-if>
+
+<span class="shop-price">{{it.price}}</span>
+</div>
+<div style="padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 10px; flex: 1">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: {{it.ink}}">{{it.kind}}</span>
+<h3 style="margin: 0; font-weight: 600; font-size: 18px; color: #ECEFF3">{{it.name}}</h3>
+<p style="margin: 0; font-size: 14px; line-height: 1.55; color: #C2CAD4; flex: 1">{{it.desc}}</p>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{it.tags}}" as="tg" hint-placeholder-count="2">
+<span style="height: 24px; padding: 0 9px; border-radius: 7px; display: inline-flex; align-items: center; font-size: 12px; color: #C9D0DA; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08)">{{tg}}</span>
+</sc-for>
+</div>
+<button class="accent" style="background: {{accent}}; margin-top: 6px; min-height: 46px">{{it.cta}}</button>
+</div>
+</article>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isInstalls}}" hint-placeholder-val="{{false}}">
+<div class="rise" style="display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+<label style="position: relative; flex: 1 1 260px; display: block">
+<span class="sr">Поиск установок</span>
+<input class="field" type="search" value="{{instQuery}}" onChange="{{onInstQuery}}" placeholder="Поиск по названию или версии" style="padding-left: 40px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8A94A3" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="position: absolute; left: 14px; top: 13px"><circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4-4"></path></svg>
+</label>
+<button class="ghost" onClick="{{importPack}}" title="Или перетащите файл .mrpack в окно лаунчера"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"></path><path d="M5 19h14"></path></svg>{{importLabel}}</button>
+<button class="accent" data-sfx="open" onClick="{{openNewInst}}" style="background: {{accent}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+Новая установка
+</button>
+</div>
+<sc-if value="{{noInstallsFound}}" hint-placeholder-val="{{false}}">
+<div class="glass" style="border-radius: 16px; padding: 24px; text-align: center; color: #8A94A3; font-size: 13px; background: rgba(14,18,24,0.62)">Ничего не нашлось — попробуйте другое название или версию.</div>
+</sc-if>
+<div class="list-grid">
+<sc-for list="{{installsList}}" as="v" hint-placeholder-count="4">
+<div class="glass card" style="border-radius: 16px; padding: 14px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; background: rgba(14,18,24,0.62)">
+<span style="width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; flex: none; overflow: hidden; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.07)">
+<sc-if value="{{v.hasIcon}}" hint-placeholder-val="{{false}}"><img src="{{v.iconSrc}}" alt="" class="inst-icon"></sc-if>
+<sc-if value="{{v.isVanilla}}" hint-placeholder-val="{{true}}"><svg width="26" height="26" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="0" width="16" height="16" fill="#7A5232"></rect><rect x="0" y="0" width="16" height="5" fill="#5DA03A"></rect><rect x="2" y="5" width="2" height="2" fill="#5DA03A"></rect><rect x="7" y="5" width="2" height="3" fill="#5DA03A"></rect><rect x="12" y="5" width="2" height="2" fill="#5DA03A"></rect><rect x="4" y="10" width="2" height="2" fill="#6A4529"></rect><rect x="10" y="12" width="2" height="2" fill="#8C6440"></rect></svg></sc-if>
+<sc-if value="{{v.isForge}}" hint-placeholder-val="{{false}}"><svg width="26" height="26" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4h10l3 2h-4v2l2 3.5H5L7 8V6H3.5z" fill="#E09A5B"></path><rect x="4" y="12" width="9" height="2" rx=".5" fill="#B8743F"></rect></svg></sc-if>
+<sc-if value="{{v.isFabric}}" hint-placeholder-val="{{false}}"><svg width="26" height="26" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="2.5" fill="#DBD0B4"></rect><path d="M2 11L11 2M5 14.5L14.5 5" stroke="#9E8F6C" stroke-width="1.8"></path></svg></sc-if>
+</span>
+<div style="flex: 1 1 220px; min-width: 0">
+<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+<span style="font-weight: 600; font-size: 15px">{{v.install}}</span>
+<sc-if value="{{v.selected}}" hint-placeholder-val="{{false}}"><span style="height: 20px; padding: 0 8px; border-radius: 6px; display: inline-flex; align-items: center; background: rgba(91,208,122,0.12); color: #86DDA0; font-size: 11px; font-weight: 600">Выбрана</span></sc-if>
+</div>
+<div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #8A94A3; margin-top: 5px">{{v.name}} · {{v.sub}}</div>
+</div>
+<span style="font-size: 12px; color: #8A94A3">Запуск: {{v.last}}</span>
+<div style="display: flex; gap: 8px">
+<button class="ghost icon-btn" aria-label="Открыть папку установки" onClick="{{v.openDir}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></button>
+<button class="ghost icon-btn" aria-label="{{v.menuLabel}}" aria-expanded="{{v.menuOpen}}" title="Действия" onClick="{{v.toggleMenu}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></button>
+<button class="accent" style="background: {{accent}}" onClick="{{v.playIt}}">Играть</button>
+</div>
+<sc-if value="{{v.menuOpen}}" hint-placeholder-val="{{false}}">
+<div class="inst-actions" role="group" aria-label="{{v.menuLabel}}">
+<sc-if value="{{v.canEdit}}" hint-placeholder-val="{{true}}"><button class="inst-act" onClick="{{v.rename}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path></svg>Переименовать</button></sc-if>
+<sc-if value="{{v.canDuplicate}}" hint-placeholder-val="{{true}}"><button class="inst-act" onClick="{{v.duplicate}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg>Дублировать</button></sc-if>
+<sc-if value="{{v.canDuplicate}}" hint-placeholder-val="{{true}}"><button class="inst-act" onClick="{{v.exportIt}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5"></path><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"></path></svg>Экспорт в .mrpack</button></sc-if>
+<sc-if value="{{v.canDuplicate}}" hint-placeholder-val="{{true}}"><button class="inst-act" onClick="{{v.backupsIt}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"></path><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg>Бэкапы миров</button></sc-if>
+<button class="inst-act" onClick="{{v.repairIt}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"></path></svg>Проверить целостность файлов</button>
+<button class="inst-act" onClick="{{v.launchIt}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"></path><circle cx="16" cy="6" r="2"></circle><circle cx="10" cy="12" r="2"></circle><circle cx="18" cy="18" r="2"></circle></svg>Параметры запуска<sc-if value="{{v.ownLaunch}}" hint-placeholder-val="{{false}}"><span class="xp-tag is-mr" style="margin-left: 6px">свои</span></sc-if></button>
+<button class="inst-act" onClick="{{v.openDir}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>Открыть папку</button>
+<sc-if value="{{v.canEdit}}" hint-placeholder-val="{{true}}"><button class="{{v.delCls}}" onClick="{{v.del}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6"></path><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"></path></svg>{{v.delLabel}}</button></sc-if>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isMods}}" hint-placeholder-val="{{false}}">
+<div class="rise" style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+<div role="tablist" aria-label="Моды и Сборки" style="display: inline-flex; gap: 4px; padding: 4px; border-radius: 13px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08)">
+<button class="seg {{segCatalog}}" role="tab" aria-selected="{{viewCatalog}}" onClick="{{setCatalog}}" style="display: inline-flex; align-items: center; gap: 8px">Каталог</button>
+<button class="seg {{segInstalled}}" role="tab" aria-selected="{{viewInstalled}}" onClick="{{setInstalled}}">Установленные <span style="opacity: 0.6; font-family: 'JetBrains Mono', monospace; font-size: 12px">{{imCount}}</span></button>
+</div>
+<sc-if value="{{viewCatalog}}" hint-placeholder-val="{{true}}">
+<div role="radiogroup" aria-label="Источник" style="display: inline-flex; gap: 4px; padding: 4px; border-radius: 13px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08)">
+<sc-for list="{{srcChips}}" as="sc" hint-placeholder-count="2">
+<button class="{{sc.cls}}" role="radio" aria-checked="{{sc.on}}" onClick="{{sc.pick}}" style="display: inline-flex; align-items: center; gap: 8px"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{sc.dot}}"></span>{{sc.label}}</button>
+</sc-for>
+</div>
+</sc-if>
+<button class="btn-emerald" data-sfx="open" onClick="{{openAi}}" style="min-height: 44px; font-size: 14px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path></svg>Собрать с ИИ</button>
+<span style="font-size: 13px; color: #A3ADBB">Модов включено в «{{ver.install}}»: <b style="color: #ECEFF3">{{installedCount}}</b></span>
+</div>
+
+<sc-if value="{{viewCatalog}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; gap: 14px">
+
+<div class="glass" style="border-radius: 18px; padding: 14px; background: rgba(12,16,21,0.62); display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+<div role="radiogroup" aria-label="Тип" style="display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 13px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08)">
+<sc-for list="{{typeChips}}" as="tc" hint-placeholder-count="4">
+<button class="{{tc.cls}}" role="radio" aria-checked="{{tc.on}}" onClick="{{tc.pick}}">{{tc.label}}</button>
+</sc-for>
+</div>
+<label style="position: relative; flex: 1 1 240px; display: block">
+<span class="sr">Поиск по каталогу</span>
+<input class="field" type="search" value="{{modQuery}}" onChange="{{onModQuery}}" placeholder="{{searchPlaceholder}}" style="padding-left: 40px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8A94A3" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="position: absolute; left: 14px; top: 13px"><circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4-4"></path></svg>
+</label>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+<sc-if value="{{showLoader}}" hint-placeholder-val="{{true}}">
+<label class="mr-filter">Загрузчик
+<select class="field" value="{{modLoader}}" onChange="{{onModLoader}}"><sc-for list="{{loaderOptions}}" as="lo" hint-placeholder-count="6"><option value="{{lo.value}}">{{lo.label}}</option></sc-for></select>
+</label>
+</sc-if>
+<sc-if value="{{showGameVer}}" hint-placeholder-val="{{true}}">
+<label class="mr-filter">Версия игры
+<select class="field" value="{{modVer}}" onChange="{{onModVer}}"><sc-for list="{{verOptions}}" as="vo" hint-placeholder-count="2"><option value="{{vo.value}}">{{vo.label}}</option></sc-for></select>
+</label>
+</sc-if>
+<label class="mr-filter">Сортировка
+<select class="field" value="{{modSort}}" onChange="{{onModSort}}">
+<option value="relevance">По релевантности</option>
+<option value="downloads">По скачиваниям</option>
+<option value="follows">По популярности</option>
+<option value="newest">Сначала новые</option>
+<option value="updated">Недавно обновлённые</option>
+</select>
+</label>
+</div>
+</div>
+
+<sc-if value="{{isModpackType}}" hint-placeholder-val="{{false}}">
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px">
+<button class="card mr-action" data-sfx="open" onClick="{{openAi}}">
+<span class="mr-action-ico" style="background: rgba(91,208,122,0.12); color: #5BD07A"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path></svg></span>
+<span style="display: flex; flex-direction: column; gap: 3px; text-align: left"><span style="font-weight: 600; font-size: 14px">Собрать с ИИ</span><span style="font-size: 12px; color: #8A94A3">Опишите идею — нейросеть подберёт моды</span></span>
+</button>
+<button class="card mr-action" onClick="{{importPack}}">
+<span class="mr-action-ico" style="background: rgba(27,217,106,0.12); color: #4BE38D"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"></path><path d="M5 19h14"></path></svg></span>
+<span style="display: flex; flex-direction: column; gap: 3px; text-align: left"><span style="font-weight: 600; font-size: 14px">{{importLabel}}</span><span style="font-size: 12px; color: #8A94A3">Файл с диска станет новой установкой. Можно перетащить в окно</span></span>
+</button>
+</div>
+</sc-if>
+
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 13px; color: #8A94A3">
+<span>{{foundLabel}}<b style="color: #ECEFF3; margin-left: 5px">{{foundCount}}</b></span>
+<span class="{{filterNoteCls}}">{{filterNote}}</span>
+</div>
+
+<sc-if value="{{mrLoading}}" hint-placeholder-val="{{false}}">
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); gap: 12px" aria-busy="true" aria-label="Загрузка каталога">
+<div class="mr-skel"></div><div class="mr-skel"></div><div class="mr-skel"></div><div class="mr-skel"></div>
+</div>
+</sc-if>
+
+<sc-if value="{{showCards}}" hint-placeholder-val="{{true}}">
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); gap: 12px">
+<sc-for list="{{catalog}}" as="m" hint-placeholder-count="8">
+<div class="glass card" style="border-radius: 16px; padding: 14px; display: flex; gap: 14px; align-items: flex-start; background: rgba(14,18,24,0.66)">
+<span style="width: 56px; height: 56px; border-radius: 12px; overflow: hidden; flex: none; display: grid; place-items: center; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08)">
+<sc-if value="{{m.hasIcon}}" hint-placeholder-val="{{true}}"><img src="{{m.i}}" alt="" width="56" height="56" loading="lazy" referrerpolicy="no-referrer" style="width: 56px; height: 56px; display: block; object-fit: cover"></sc-if>
+<sc-if value="{{m.noIcon}}" hint-placeholder-val="{{false}}"><span style="color: #C9D0DA; display: grid; place-items: center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"></path><path d="M3 8l9 5 9-5M12 13v8"></path></svg></span></sc-if>
+</span>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+<button class="mr-title" onClick="{{m.page}}" title="{{m.pageTitle}}">{{m.t}}</button>
+<span style="font-size: 12px; color: #8A94A3">{{m.byline}}</span>
+<p style="margin: 0; font-size: 13px; line-height: 1.45; color: #B5BECA; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{m.d}}</p>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px">
+<sc-for list="{{m.tags}}" as="tg" hint-placeholder-count="2">
+<span style="height: 22px; padding: 0 8px; border-radius: 6px; display: inline-flex; align-items: center; font-size: 11px; color: #C9D0DA; background: rgba(255,255,255,0.06)">{{tg}}</span>
+</sc-for>
+<sc-for list="{{m.loaders}}" as="lo" hint-placeholder-count="2">
+<span style="height: 22px; padding: 0 8px; border-radius: 6px; display: inline-flex; align-items: center; font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #A3ADBB; border: 1px solid rgba(255,255,255,0.1)">{{lo}}</span>
+</sc-for>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex: none">
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #A3ADBB; font-family: 'JetBrains Mono', monospace; white-space: nowrap" title="Скачивания">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg>{{m.dl}}</span>
+<sc-if value="{{m.hasFollows}}" hint-placeholder-val="{{true}}"><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #8A94A3; font-family: 'JetBrains Mono', monospace; white-space: nowrap" title="Подписчики">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg>{{m.follows}}</span></sc-if>
+<button class="{{m.btnCls}}" data-sfx="toggle" onClick="{{m.toggle}}" style="min-width: 132px; padding: 0 14px">{{m.btnLabel}}</button>
+</div>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{mrError}}" hint-placeholder-val="{{false}}">
+<div class="glass" role="alert" style="border-radius: 18px; padding: 30px 20px; text-align: center; background: rgba(12,16,21,0.6); display: flex; flex-direction: column; align-items: center; gap: 8px">
+<span style="font-weight: 600; font-size: 15px">{{mrErrTitle}}</span>
+<span style="font-size: 13px; color: #F2998B">{{mrErr}}</span>
+<sc-if value="{{mrErrIsCf}}" hint-placeholder-val="{{false}}"><span style="font-size: 12px; color: #8A94A3">{{mrErrHint}}</span></sc-if>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 6px">
+<button class="ghost" onClick="{{mrRetry}}">Повторить</button>
+<sc-if value="{{mrErrIsCf}}" hint-placeholder-val="{{false}}"><button class="ghost" onClick="{{switchToMr}}">Открыть Modrinth</button></sc-if>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{noResults}}" hint-placeholder-val="{{false}}">
+<div class="glass" style="border-radius: 18px; padding: 36px 20px; text-align: center; background: rgba(12,16,21,0.6); display: flex; flex-direction: column; align-items: center; gap: 8px">
+<span style="font-weight: 600; font-size: 15px">Ничего не нашлось</span>
+<span style="font-size: 13px; color: #8A94A3">Попробуйте другой запрос или сбросьте фильтры</span>
+<button class="ghost" onClick="{{resetFilters}}" style="margin-top: 6px">Сбросить фильтры</button>
+</div>
+</sc-if>
+
+<sc-if value="{{hasMore}}" hint-placeholder-val="{{true}}">
+<button class="ghost" onClick="{{showMore}}" style="align-self: center; min-width: 220px">{{moreLabel}}</button>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{viewInstalled}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div role="radiogroup" aria-label="Что показать" style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{imKinds}}" as="ik" hint-placeholder-count="3">
+<button class="{{ik.cls}}" role="radio" aria-checked="{{ik.on}}" onClick="{{ik.pick}}">{{ik.label}}</button>
+</sc-for>
+</div>
+<div class="glass" style="border-radius: 16px; padding: 12px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: rgba(12,16,21,0.62); font-size: 13px; color: #C9D0DA">
+<span style="flex: 1 1 260px">{{imSummary}}</span>
+<sc-if value="{{imIsMods}}" hint-placeholder-val="{{true}}">
+<button class="ghost" onClick="{{imCheck}}" style="min-height: 36px; font-size: 13px">{{imCheckLabel}}</button>
+<sc-if value="{{imHasUpdates}}" hint-placeholder-val="{{false}}"><button class="btn-emerald" onClick="{{imUpdateAll}}" style="min-height: 36px; font-size: 13px">{{imUpdateAllLabel}}</button></sc-if>
+</sc-if>
+<button class="ghost" onClick="{{imRefresh}}" style="min-height: 36px; font-size: 13px">Перечитать</button>
+<button class="ghost" onClick="{{imOpenDir}}" style="min-height: 36px; font-size: 13px">{{imFolderLabel}}</button>
+</div>
+<sc-if value="{{needIris}}" hint-placeholder-val="{{false}}">
+<div class="glass mr-iris" role="note">
+<span style="flex: 1 1 260px">{{irisText}}</span>
+<sc-if value="{{canIris}}" hint-placeholder-val="{{true}}"><button class="btn-emerald" onClick="{{installIris}}" style="min-height: 36px; font-size: 13px">{{irisLabel}}</button></sc-if>
+</div>
+</sc-if>
+<sc-if value="{{hasShaderNote}}" hint-placeholder-val="{{false}}"><span style="font-size: 12px; color: #8A94A3">{{shaderNote}}</span></sc-if>
+<div class="im-list">
+<sc-for list="{{imMods}}" as="im" hint-placeholder-count="5">
+<div class="glass {{im.rowCls}}">
+<span class="im-ico">
+<sc-if value="{{im.hasIcon}}" hint-placeholder-val="{{false}}"><img src="{{im.icon}}" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer"></sc-if>
+<sc-if value="{{im.noIcon}}" hint-placeholder-val="{{true}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"></path><path d="M3 8l9 5 9-5M12 13v8"></path></svg></sc-if>
+</span>
+<span class="im-main">
+<span class="im-t">{{im.title}}<sc-if value="{{im.off}}" hint-placeholder-val="{{false}}"><span class="im-chip">Выключен</span></sc-if></span>
+<span class="im-f">{{im.file}} · {{im.size}}</span>
+<sc-if value="{{im.hasUpdate}}" hint-placeholder-val="{{false}}"><span class="im-upd">Обновление: {{im.updLabel}}</span></sc-if>
+</span>
+<sc-if value="{{im.hasUpdate}}" hint-placeholder-val="{{false}}"><button class="im-upd-btn" onClick="{{im.update}}">{{im.updBtnLabel}}</button></sc-if>
+<button class="im-sw" role="switch" aria-checked="{{im.on}}" aria-label="{{im.swLabel}}" data-sfx="toggle" onClick="{{im.toggle}}"><span class="{{im.swCls}}"></span></button>
+<button class="{{im.delCls}}" aria-label="Удалить {{im.file}}" title="Удалить" onClick="{{im.del}}">
+<sc-if value="{{im.idle}}" hint-placeholder-val="{{true}}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6"></path><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"></path></svg></sc-if>
+<sc-if value="{{im.confirm}}" hint-placeholder-val="{{false}}"><span>Удалить?</span></sc-if>
+</button>
+</div>
+</sc-for>
+</div>
+<sc-if value="{{imEmpty}}" hint-placeholder-val="{{false}}">
+<div class="glass" style="border-radius: 16px; padding: 28px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; background: rgba(14,18,24,0.66)">
+<span style="font-weight: 600; font-size: 15px">{{imEmptyTitle}}</span>
+<span style="font-size: 13px; color: #8A94A3">{{imEmptyText}}</span>
+<button class="ghost" onClick="{{imBrowse}}" style="margin-top: 6px">Открыть каталог</button>
+</div>
+</sc-if>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{isSettings}}" hint-placeholder-val="{{false}}">
+<div class="rise" style="display: flex; flex-direction: column; gap: 16px">
+<div role="tablist" aria-label="Разделы настроек" style="display: inline-flex; flex-wrap: wrap; align-self: flex-start; gap: 4px; padding: 4px; border-radius: 14px; background: rgba(12,16,21,0.6); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(16px)">
+<button class="seg {{stBgCls}}" role="tab" aria-selected="{{stBg}}" onClick="{{setStBg}}" style="min-height: 44px; padding: 0 18px">Кастомизация фона</button>
+<button class="seg {{stGameCls}}" role="tab" aria-selected="{{stGame}}" onClick="{{setStGame}}" style="min-height: 44px; padding: 0 18px">Игра и Графика</button>
+<button class="seg {{stSysCls}}" role="tab" aria-selected="{{stSys}}" onClick="{{setStSys}}" style="min-height: 44px; padding: 0 18px">Система и Лаунчер</button>
+</div>
+
+<sc-if value="{{stBg}}" hint-placeholder-val="{{true}}">
+<div class="sgrid">
+<div class="scard">
+<h2 style="margin: 0; font-family: 'Unbounded', sans-serif; font-weight: 600; font-size: 15px">Фон лаунчера</h2>
+<div style="display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08)">
+<span style="width: 112px; height: 64px; border-radius: 10px; overflow: hidden; flex: none; background: {{bgThumbFill}}; border: 1px solid rgba(255,255,255,0.12)">
+<sc-if value="{{bgThumbDefault}}" hint-placeholder-val="{{true}}"><img src="/assets/img/bg-shader-sunset.webp" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block"></sc-if>
+<sc-if value="{{bgThumbCustom}}" hint-placeholder-val="{{false}}"><img src="{{bgFileUrl}}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block"></sc-if>
+</span>
+<span style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<span style="font-size: 14px; font-weight: 600; color: #ECEFF3">{{bgCurrentLabel}}</span>
+<span style="font-size: 12px; color: #8A94A3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{bgCurrentSub}}</span>
+</span>
+</div>
+<label class="accent upload" style="background: {{accent}}; min-height: 50px; font-size: 15px">
+<input type="file" accept="image/*" class="sr" onChange="{{onBgFile}}">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"></path></svg>
+Загрузить фон с компьютера
+</label>
+<span style="font-size: 13px; color: #C9D0DA; padding-top: 4px">Или выберите готовый</span>
+<div role="radiogroup" aria-label="Готовые фоны" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<sc-for list="{{bgModes}}" as="bm" hint-placeholder-count="3">
+<button class="{{bm.cls}}" role="radio" aria-checked="{{bm.on}}" onClick="{{bm.pick}}" data-sfx="toggle">
+<span style="display: block; height: 54px; border-radius: 10px; background: {{bm.preview}}; border: 1px solid rgba(255,255,255,0.08)"></span>
+<span style="font-weight: 600; font-size: 13px; color: #ECEFF3">{{bm.label}}</span>
+</button>
+</sc-for>
+</div>
+<sc-if value="{{bgIsColorMode}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; align-items: center; gap: 12px">
+<input id="bgcolor" type="color" value="{{bgColor}}" onChange="{{onBgColor}}" aria-label="Цвет фона" style="width: 56px; height: 44px; padding: 0; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; background: transparent; cursor: pointer">
+<input class="field" value="{{bgColor}}" onChange="{{onBgColor}}" aria-label="HEX-код цвета" spellcheck="false" style="font-family: 'JetBrains Mono', monospace; max-width: 160px">
+</div>
+</sc-if>
+<sc-if value="{{bgIsPresetMode}}" hint-placeholder-val="{{false}}">
+<div role="radiogroup" aria-label="Пресеты" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<sc-for list="{{presets}}" as="pr" hint-placeholder-count="4">
+<button class="{{pr.cls}}" role="radio" aria-checked="{{pr.on}}" onClick="{{pr.pick}}">
+<span style="width: 28px; height: 28px; border-radius: 8px; flex: none; background: {{pr.hex}}; border: 1px solid rgba(255,255,255,0.18)"></span>
+<span style="display: flex; flex-direction: column; gap: 2px; text-align: left"><span style="font-size: 13px; font-weight: 600; color: #ECEFF3">{{pr.label}}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8A94A3">{{pr.hex}}</span></span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+</div>
+
+<div class="scard">
+<h2 style="margin: 0; font-family: 'Unbounded', sans-serif; font-weight: 600; font-size: 15px">Стеклянный оверлей</h2>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><label for="bgblur" style="font-size: 13px; color: #C9D0DA">Размытие (Blur)</label><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #86DDA0">{{bgBlur}} px</span></div>
+<input id="bgblur" type="range" min="0" max="24" step="1" value="{{bgBlur}}" onChange="{{onBgBlur}}">
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><label for="bgdim" style="font-size: 13px; color: #C9D0DA">Затемнение (Dim)</label><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #86DDA0">{{bgDim}}%</span></div>
+<input id="bgdim" type="range" min="0" max="85" step="1" value="{{bgDim}}" onChange="{{onBgDim}}">
+</div>
+<p style="margin: 0; font-size: 12px; line-height: 1.5; color: #8A94A3">Изменения применяются сразу. Фон с компьютера запоминается в этом браузере.</p>
+<button class="ghost" onClick="{{resetBg}}" style="align-self: flex-start">Вернуть стандартный фон</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{stGame}}" hint-placeholder-val="{{false}}">
+<div class="sgrid">
+
+<section class="scard" aria-labelledby="h-java">
+<div class="scard-h">
+<span class="scard-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"></rect><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"></path><rect x="9" y="9" width="6" height="6" rx="1"></rect></svg></span>
+<span class="scard-t"><h2 id="h-java">Java и память</h2><span>Выделение ОЗУ и параметры запуска</span></span>
+</div>
+
+<div class="sfield">
+<div style="display: flex; justify-content: space-between; align-items: baseline">
+<label class="slabel" for="ram">Оперативная память</label>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 500; color: #86DDA0">{{ram}} ГБ</span>
+</div>
+<input id="ram" type="range" min="2" max="{{ramMax}}" step="1" value="{{ram}}" onChange="{{onRam}}">
+<div class="ram-scale" aria-hidden="true">
+<sc-for list="{{ramScale}}" as="rs" hint-placeholder-count="4">
+<span style="left: {{rs.left}}%">{{rs.label}}</span>
+</sc-for>
+</div>
+<div class="memcard">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 12px">
+<span style="color: #C9D0DA">Память компьютера</span>
+<span style="font-family: 'JetBrains Mono', monospace; color: #8A94A3">{{memSummary}}</span>
+</div>
+<div class="membar" role="img" aria-label="{{memAria}}">
+<span style="width: {{memSysPct}}%; background: rgba(255,255,255,0.22)"></span>
+<span style="width: {{memMcPct}}%; background: {{memMcColor}}"></span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 14px; font-size: 11px; color: #8A94A3">
+<span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 8px; height: 8px; border-radius: 2px; background: rgba(255,255,255,0.22)"></span>Система и программы</span>
+<span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 8px; height: 8px; border-radius: 2px; background: {{memMcColor}}"></span>Minecraft</span>
+<span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 8px; height: 8px; border-radius: 2px; border: 1px solid rgba(255,255,255,0.25)"></span>Свободно</span>
+</div>
+<span style="font-size: 12px; color: {{memHintColor}}">{{memHint}}</span>
+</div>
+</div>
+
+<div class="sfield">
+<label class="slabel" for="java">Путь к Java</label>
+<div class="selwrap">
+<select id="java" class="field sel" value="{{javaValue}}" onChange="{{onJava}}"><sc-for list="{{javaOptions}}" as="jo" hint-placeholder-count="4"><option value="{{jo.value}}">{{jo.label}}</option></sc-for></select>
+</div>
+<span style="font-size: 12px; line-height: 1.5; color: #8A94A3">{{javaHint}}</span>
+</div>
+
+<div class="sfield">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 10px">
+<label class="slabel" for="jvm">Аргументы JVM</label>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8A94A3">{{jvmCount}}</span>
+</div>
+<div style="display: flex; gap: 8px">
+<input id="jvm" class="field" value="{{jvm}}" onChange="{{onJvm}}" spellcheck="false" style="min-height: 40px; font-family: 'JetBrains Mono', monospace; font-size: 12px; text-overflow: ellipsis">
+<button class="ghost" onClick="{{setAikar}}" title="Сбросить к рекомендуемым флагам Aikar" style="min-height: 40px; padding: 0 12px; font-size: 13px; white-space: nowrap; flex: none">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path></svg>
+Aikar's Flags
+</button>
+</div>
+<sc-if value="{{jvmIsAikar}}" hint-placeholder-val="{{false}}"><span style="font-size: 12px; color: #86DDA0">Используются рекомендуемые флаги Aikar для G1GC</span></sc-if>
+</div>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{stSys}}" hint-placeholder-val="{{false}}">
+<div class="sgrid">
+
+<section class="scard" aria-labelledby="h-perf">
+<div class="scard-h">
+<span class="scard-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"></path></svg></span>
+<span class="scard-t"><h2 id="h-perf">Производительность</h2><span>Приоритет процесса игры в системе</span></span>
+</div>
+<div role="radiogroup" aria-label="Приоритет процесса" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{priorities}}" as="pz" hint-placeholder-count="3">
+<button class="{{pz.cls}}" role="radio" aria-checked="{{pz.on}}" onClick="{{pz.pick}}" style="min-height: 58px; gap: 3px"><span style="font-weight: 600; font-size: 13px">{{pz.label}}</span><span style="font-size: 11px; opacity: 0.7">{{pz.sub}}</span></button>
+</sc-for>
+</div>
+<sc-if value="{{prioWarn}}" hint-placeholder-val="{{false}}">
+<div class="snote warn">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M12 3l10 18H2z"></path><path d="M12 10v5M12 18h.01"></path></svg>
+<span>«Реального времени» может замедлить остальные программы. Включайте, только если понимаете зачем.</span>
+</div>
+</sc-if>
+<sc-if value="{{prioNormal}}" hint-placeholder-val="{{true}}">
+<div class="snote">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
+<span>{{prioNote}}</span>
+</div>
+</sc-if>
+<div style="flex: 1"></div>
+<div class="sfield">
+<label class="slabel" for="lang">Язык лаунчера</label>
+<div class="selwrap">
+<select id="lang" class="field sel" value="{{langValue}}" onChange="{{onLang}}"><sc-for list="{{langOptions}}" as="lo" hint-placeholder-count="2"><option value="{{lo.value}}">{{lo.label}}</option></sc-for></select>
+</div>
+</div>
+</section>
+
+<section class="scard" aria-labelledby="h-dir">
+<div class="scard-h">
+<span class="scard-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></span>
+<span class="scard-t"><h2 id="h-dir">Папка игры</h2><span>Версии, Java, установки, миры и логи</span></span>
+</div>
+<div class="dircard">
+<span class="dir-ico" aria-hidden="true">
+<svg width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 6.5a2 2 0 0 1 2-2h4.6l2 2h8.4a2 2 0 0 1 2 2V9H2.5z" fill="#E0A63A"></path><path d="M2.5 8.5h19v9a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2z" fill="#F2C25B"></path><path d="M2.5 10h19" stroke="rgba(0,0,0,0.12)"></path></svg>
+</span>
+<span style="display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1">
+<span class="dir-path" title="{{gameDirPath}}">{{gameDirPath}}</span>
+<span style="font-size: 11px; color: #8A94A3">{{gameDirNote}}</span>
+</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<button class="accent" onClick="{{openGameDir}}" style="background: {{accent}}; font-size: 13px">Открыть папку</button>
+<button class="ghost" data-sfx="open" onClick="{{changeGameDir}}" style="font-size: 13px">Сменить папку…</button>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<button class="ghost" onClick="{{openLogs}}" style="font-size: 13px; padding: 0 8px">Логи</button>
+<button class="ghost" onClick="{{openShots}}" style="font-size: 13px; padding: 0 8px">Скриншоты</button>
+<button class="ghost" onClick="{{clearCache}}" style="font-size: 13px; padding: 0 8px">{{cacheLabel}}</button>
+</div>
+<div class="usage">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px">
+<span style="font-size: 12px; color: #C9D0DA">{{usageSummary}}</span>
+<button class="nf-clear" onClick="{{refreshUsage}}">{{usageRefreshLabel}}</button>
+</div>
+<sc-if value="{{hasUsage}}" hint-placeholder-val="{{true}}">
+<div class="usage-bar" role="img" aria-label="{{usageSummary}}"><sc-for list="{{usageSegs}}" as="us" hint-placeholder-count="6"><span style="width: {{us.w}}%; background: {{us.color}}" title="{{us.label}}"></span></sc-for></div>
+<div class="usage-rows">
+<sc-for list="{{usageRows}}" as="ur" hint-placeholder-count="6">
+<span class="usage-row"><span class="usage-sw" style="background: {{ur.color}}"></span><span style="flex: 1; min-width: 0">{{ur.label}}</span><span class="usage-size">{{ur.size}}</span></span>
+</sc-for>
+</div>
+</sc-if>
+</div>
+<sc-if value="{{gameDirCustom}}" hint-placeholder-val="{{false}}"><button class="ghost" onClick="{{resetGameDir}}" style="font-size: 13px; align-self: flex-start">Вернуть стандартную папку…</button></sc-if>
+</section>
+
+<section class="scard" aria-labelledby="h-ui">
+<div class="scard-h">
+<span class="scard-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"></path><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"></path></svg></span>
+<span class="scard-t"><h2 id="h-ui">Интерфейс и звуки</h2><span>Как выглядит и звучит лаунчер</span></span>
+</div>
+<div class="tlist">
+<button class="{{tg.sound.rowCls}}" aria-pressed="{{tg.sound.on}}" data-sfx="toggle" onClick="{{tg.sound.toggle}}">
+<span class="trow-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"></path><path d="M15.5 9a4 4 0 0 1 0 6"></path></svg></span>
+<span class="trow-t"><span>Звуки интерфейса</span><span>Щелчки, наведение и сигнал запуска</span></span>
+<span class="{{tg.sound.swCls}}"></span>
+</button>
+<button class="{{tg.animations.rowCls}}" aria-pressed="{{tg.animations.on}}" data-sfx="toggle" onClick="{{tg.animations.toggle}}">
+<span class="trow-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"></path></svg></span>
+<span class="trow-t"><span>Анимации интерфейса</span><span>Переходы, дыхание игрока, эффекты наведения</span></span>
+<span class="{{tg.animations.swCls}}"></span>
+</button>
+<button class="{{tg.discord.rowCls}}" aria-pressed="{{tg.discord.on}}" data-sfx="toggle" onClick="{{tg.discord.toggle}}">
+<span class="trow-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"></path><path d="M9 10.5h.01M15 10.5h.01"></path></svg></span>
+<span class="trow-t"><span>Discord Rich Presence</span><span>{{discordDesc}}</span></span>
+<span class="{{tg.discord.swCls}}"></span>
+</button>
+</div>
+</section>
+
+<section class="scard" aria-labelledby="h-launch">
+<div class="scard-h">
+<span class="scard-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 15c-1.5 1.5-2 4-2 6 2 0 4.5-.5 6-2"></path><path d="M9 15l-3-3c1.5-4 5-9 13-9 0 8-5 11.5-9 13z"></path><circle cx="15" cy="9" r="1.6"></circle></svg></span>
+<span class="scard-t"><h2 id="h-launch">Поведение при запуске</h2><span>Что делает лаунчер, когда вы нажимаете «Играть»</span></span>
+</div>
+<div class="tlist">
+<button class="{{tg.hide.rowCls}}" aria-pressed="{{tg.hide.on}}" data-sfx="toggle" onClick="{{tg.hide.toggle}}">
+<span class="trow-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M8 14h8"></path></svg></span>
+<span class="trow-t"><span>Скрывать лаунчер во время игры</span><span>Окно вернётся после выхода из Minecraft</span></span>
+<span class="{{tg.hide.swCls}}"></span>
+</button>
+<button class="{{tg.console.rowCls}}" aria-pressed="{{tg.console.on}}" data-sfx="toggle" onClick="{{tg.console.toggle}}">
+<span class="trow-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M7 9l3 3-3 3M12 15h5"></path></svg></span>
+<span class="trow-t"><span>Консоль разработчика</span><span>Открывать окно логов вместе с игрой</span></span>
+<span class="{{tg.console.swCls}}"></span>
+</button>
+<button class="{{tg.offlineSkin.rowCls}}" aria-pressed="{{tg.offlineSkin.on}}" data-sfx="toggle" onClick="{{tg.offlineSkin.toggle}}">
+<span class="trow-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="10" height="9" rx="1.5"></rect><path d="M5 21v-5a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v5"></path></svg></span>
+<span class="trow-t"><span>Мой скин в офлайн-игре</span><span>Скин из лаунчера виден в игре без модов: через ресурс-пак, который включается при запуске</span></span>
+<span class="{{tg.offlineSkin.swCls}}"></span>
+</button>
+<button class="{{tg.backup.rowCls}}" aria-pressed="{{tg.backup.on}}" data-sfx="toggle" onClick="{{tg.backup.toggle}}">
+<span class="trow-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"></path><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg></span>
+<span class="trow-t"><span>Автобэкап миров</span><span>{{backupDesc}}</span></span>
+<span class="{{tg.backup.swCls}}"></span>
+</button>
+<sc-if value="{{backupOn}}" hint-placeholder-val="{{true}}">
+<div class="subrow">
+<label for="bfreq" style="font-size: 13px; color: #C9D0DA">Частота бэкапа</label>
+<div class="selwrap" style="flex: 1; max-width: 240px">
+<select id="bfreq" class="field sel" value="{{backupFreq}}" onChange="{{onBackupFreq}}" style="min-height: 38px">
+<option value="launch">Перед каждым запуском</option>
+<option value="daily">Раз в день</option>
+<option value="weekly">Раз в неделю</option>
+</select>
+</div>
+</div>
+</sc-if>
+<button class="{{tg.autoUpdate.rowCls}}" aria-pressed="{{tg.autoUpdate.on}}" data-sfx="toggle" onClick="{{tg.autoUpdate.toggle}}">
+<span class="trow-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"></path><path d="M21 4v5h-5"></path></svg></span>
+<span class="trow-t"><span>Проверять обновления при запуске</span><span>Новая версия Signal Launcher предлагается сразу после старта</span></span>
+<span class="{{tg.autoUpdate.swCls}}"></span>
+</button>
+<div class="subrow" style="flex-wrap: wrap; gap: 10px">
+<span style="flex: 1 1 200px; font-size: 13px; color: #C9D0DA">{{updStatus}}</span>
+<sc-if value="{{updHasNew}}" hint-placeholder-val="{{false}}"><button class="btn-emerald" onClick="{{openUpdate}}" style="min-height: 36px; font-size: 13px">Обновить…</button></sc-if>
+<button class="ghost" onClick="{{checkUpdates}}" style="min-height: 36px; font-size: 13px">{{updCheckLabel}}</button>
+</div>
+</div>
+</section>
+
+<section class="scard" aria-labelledby="h-vers" style="grid-column: 1 / -1">
+<div class="scard-h">
+<span class="scard-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5 9-5z"></path><path d="M3 13l9 5 9-5"></path><path d="M3 17.5l9 5 9-5"></path></svg></span>
+<span class="scard-t" style="flex: 1"><h2 id="h-vers">Версии игры</h2><span>Какие версии видны в панели запуска и в «Новой установке»</span></span>
+<button class="ghost" onClick="{{refreshVersions}}" style="min-height: 36px; font-size: 13px">{{verRefreshLabel}}</button>
+</div>
+<div class="tlist" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 8px">
+<button class="{{tg.snapshots.rowCls}}" aria-pressed="{{tg.snapshots.on}}" data-sfx="toggle" onClick="{{tg.snapshots.toggle}}">
+<span class="trow-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"></path><path d="M7.5 15h9"></path></svg></span>
+<span class="trow-t"><span>Показывать снапшоты</span><span>Снапшоты и пре-релизы, включая 26.x</span></span>
+<span class="{{tg.snapshots.swCls}}"></span>
+</button>
+<button class="{{tg.oldBeta.rowCls}}" aria-pressed="{{tg.oldBeta.on}}" data-sfx="toggle" onClick="{{tg.oldBeta.toggle}}">
+<span class="trow-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 7h10a3 3 0 0 1 0 6H5"></path><path d="M5 13h11a3 3 0 0 1 0 6H5"></path></svg></span>
+<span class="trow-t"><span>Старые бета-версии</span><span>Beta 1.0–1.8, 2010–2011</span></span>
+<span class="{{tg.oldBeta.swCls}}"></span>
+</button>
+<button class="{{tg.oldAlpha.rowCls}}" aria-pressed="{{tg.oldAlpha.on}}" data-sfx="toggle" onClick="{{tg.oldAlpha.toggle}}">
+<span class="trow-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20L12 4l8 16"></path><path d="M7.5 13h9"></path></svg></span>
+<span class="trow-t"><span>Старые альфа-версии</span><span>Alpha, Infdev, Indev и Classic</span></span>
+<span class="{{tg.oldAlpha.swCls}}"></span>
+</button>
+</div>
+<div class="snote">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
+<span>{{verInfo}}</span>
+</div>
+</section>
+</div>
+</sc-if>
+</div>
+</sc-if>
+</section>
+
+<div class="glass" style="position: sticky; bottom: 16px; z-index: 40; border-radius: 22px; padding: 14px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; background: rgba(13,17,23,0.78)">
+
+<div style="position: relative; flex: 1 1 300px; max-width: 460px">
+<button class="verbtn" data-hover="1" data-sfx="open" onClick="{{toggleVer}}" aria-haspopup="listbox" aria-expanded="{{verMenu}}">
+<span style="width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex: none; overflow: hidden; background: rgba(255,255,255,0.05)">
+<sc-if value="{{ver.hasIcon}}" hint-placeholder-val="{{false}}"><img src="{{ver.iconSrc}}" alt="" class="inst-icon"></sc-if>
+<sc-if value="{{ver.isVanilla}}" hint-placeholder-val="{{true}}"><svg width="24" height="24" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="0" width="16" height="16" fill="#7A5232"></rect><rect x="0" y="0" width="16" height="5" fill="#5DA03A"></rect><rect x="2" y="5" width="2" height="2" fill="#5DA03A"></rect><rect x="7" y="5" width="2" height="3" fill="#5DA03A"></rect><rect x="12" y="5" width="2" height="2" fill="#5DA03A"></rect><rect x="4" y="10" width="2" height="2" fill="#6A4529"></rect><rect x="10" y="12" width="2" height="2" fill="#8C6440"></rect></svg></sc-if>
+<sc-if value="{{ver.isForge}}" hint-placeholder-val="{{false}}"><svg width="24" height="24" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4h10l3 2h-4v2l2 3.5H5L7 8V6H3.5z" fill="#E09A5B"></path><rect x="4" y="12" width="9" height="2" rx=".5" fill="#B8743F"></rect></svg></sc-if>
+<sc-if value="{{ver.isFabric}}" hint-placeholder-val="{{false}}"><svg width="24" height="24" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="2.5" fill="#DBD0B4"></rect><path d="M2 11L11 2M5 14.5L14.5 5" stroke="#9E8F6C" stroke-width="1.8"></path></svg></sc-if>
+</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<span style="font-size: 11px; color: #8A94A3; letter-spacing: 0.08em; text-transform: uppercase">Версия</span>
+<span style="font-weight: 600; font-size: 15px; color: #ECEFF3">{{ver.name}}</span>
+<span style="font-size: 12px; color: #8A94A3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ver.sub}}</span>
+</span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A3ADBB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: rotate({{verRot}}deg); transition: transform .2s"><path d="M6 15l6-6 6 6"></path></svg>
+</button>
+
+<sc-if value="{{verMenu}}" hint-placeholder-val="{{false}}">
+<div class="pop" role="listbox" aria-label="Версии игры" style="position: absolute; bottom: calc(100% + 10px); left: 0; width: 100%; min-width: 300px; background: rgba(17,22,29,0.97); border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; padding: 8px; box-shadow: 0 -20px 60px -16px rgba(0,0,0,0.8)">
+<div style="padding: 8px 10px 6px; font-size: 11px; color: #8A94A3; letter-spacing: 0.08em; text-transform: uppercase">Установки и версии</div>
+<sc-for list="{{menuVersions}}" as="v" hint-placeholder-count="4">
+<button data-hover="1" class="{{v.rowCls}}" role="option" aria-selected="{{v.selected}}" onClick="{{v.pick}}">
+<span style="width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; flex: none; overflow: hidden; background: rgba(255,255,255,0.05)">
+<sc-if value="{{v.hasIcon}}" hint-placeholder-val="{{false}}"><img src="{{v.iconSrc}}" alt="" class="inst-icon"></sc-if>
+<sc-if value="{{v.isVanilla}}" hint-placeholder-val="{{true}}"><svg width="20" height="20" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="0" width="16" height="16" fill="#7A5232"></rect><rect x="0" y="0" width="16" height="5" fill="#5DA03A"></rect><rect x="2" y="5" width="2" height="2" fill="#5DA03A"></rect><rect x="7" y="5" width="2" height="3" fill="#5DA03A"></rect><rect x="12" y="5" width="2" height="2" fill="#5DA03A"></rect><rect x="4" y="10" width="2" height="2" fill="#6A4529"></rect><rect x="10" y="12" width="2" height="2" fill="#8C6440"></rect></svg></sc-if>
+<sc-if value="{{v.isForge}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4h10l3 2h-4v2l2 3.5H5L7 8V6H3.5z" fill="#E09A5B"></path><rect x="4" y="12" width="9" height="2" rx=".5" fill="#B8743F"></rect></svg></sc-if>
+<sc-if value="{{v.isFabric}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="2.5" fill="#DBD0B4"></rect><path d="M2 11L11 2M5 14.5L14.5 5" stroke="#9E8F6C" stroke-width="1.8"></path></svg></sc-if>
+</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span style="font-weight: 600; font-size: 14px; color: #ECEFF3">{{v.name}}</span>
+<span style="font-size: 12px; color: #8A94A3">{{v.sub}}</span>
+</span>
+<sc-if value="{{v.selected}}" hint-placeholder-val="{{false}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5BD07A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></sc-if>
+</button>
+</sc-for>
+</div>
+</sc-if>
+</div>
+
+<button class="ghost icon-btn console-btn" data-sfx="open" onClick="{{toggleConsole}}" aria-label="Консоль игры" title="Консоль игры"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M7 9l3 3-3 3M12 15h5"></path></svg></button>
+
+<button class="play" data-hover="1" data-sfx="launch" onClick="{{launch}}" aria-live="polite" style="position: relative; overflow: hidden; flex: 1 1 320px; max-width: 440px; height: 76px; border-radius: 20px; background: linear-gradient(135deg, {{accentHi}} 0%, {{accent}} 55%, {{accentLo}} 100%); color: #FFFFFF; text-shadow: 0 1px 2px rgba(0,0,0,0.35); box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), inset 0 -4px 0 rgba(0,0,0,0.2), 0 0 36px {{accentGlow}}, 0 18px 40px -16px {{accentGlow}}; padding: 0 26px; display: flex; align-items: center; justify-content: center; gap: 14px">
+<span style="position: absolute; left: 0; top: 0; bottom: 0; width: {{progress}}%; background: rgba(255,255,255,0.2); transition: width .12s linear"></span>
+<sc-if value="{{iconPlay}}" hint-placeholder-val="{{true}}"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="position: relative"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z" fill="#FFFFFF"></path></svg></sc-if>
+<sc-if value="{{iconOffline}}" hint-placeholder-val="{{false}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="position: relative"><path d="M3 3l18 18"></path><path d="M8.5 16.5a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 5.2-2.8M14.2 10.2A10 10 0 0 1 19 12.9M2 9.3a15 15 0 0 1 4.3-2.7M10.5 5.1A15 15 0 0 1 22 9.3"></path><path d="M12 20h.01"></path></svg></sc-if>
+<sc-if value="{{iconSpin}}" hint-placeholder-val="{{false}}"><span style="position: relative; width: 22px; height: 22px; border-radius: 50%; border: 2.5px solid rgba(255,255,255,0.3); border-top-color: #FFFFFF; animation: spin .8s linear infinite"></span></sc-if>
+<sc-if value="{{iconDone}}" hint-placeholder-val="{{false}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="position: relative"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></sc-if>
+<span style="position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 3px">
+<span style="font-family: 'Unbounded', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: 0.05em; line-height: 1">{{playLabel}}</span>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; opacity: 0.9; max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{playSub}}</span>
+</span>
+</button>
+</div>
+
+</main>
+</div>
+
+<sc-if value="{{modalOpen}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; z-index: 60; background: rgba(4,6,9,0.62); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: flex; justify-content: center; align-items: flex-start; padding: 110px 16px 16px">
+<div class="pop" role="dialog" aria-modal="true" aria-labelledby="add-title" style="width: 100%; max-width: 480px; background: rgba(17,22,29,0.97); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 22px; box-shadow: 0 40px 80px -24px rgba(0,0,0,0.85); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px">
+<sc-if value="{{notChoose}}" hint-placeholder-val="{{false}}">
+<button class="ghost icon-btn" aria-label="Назад" onClick="{{backModal}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+</sc-if>
+<h2 id="add-title" style="margin: 0; flex: 1; font-family: 'Unbounded', sans-serif; font-weight: 600; font-size: 18px">{{modalTitle}}</h2>
+<button class="ghost icon-btn" data-sfx="close" aria-label="Закрыть" onClick="{{closeModal}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<sc-if value="{{stepChoose}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<button class="option" data-hover="1" onClick="{{chooseMs}}">
+<span style="width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; flex: none; background: #FFFFFF"><svg width="22" height="22" viewBox="0 0 21 21" aria-hidden="true"><rect x="0" y="0" width="10" height="10" fill="#F25022"></rect><rect x="11" y="0" width="10" height="10" fill="#7FBA00"></rect><rect x="0" y="11" width="10" height="10" fill="#00A4EF"></rect><rect x="11" y="11" width="10" height="10" fill="#FFB900"></rect></svg></span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 4px">
+<span style="font-weight: 600; font-size: 15px; color: #ECEFF3">Лицензия Microsoft</span>
+<span style="font-size: 13px; line-height: 1.45; color: {{msOptionColor}}">{{msOptionDesc}}</span>
+</span>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8A94A3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+</button>
+<button class="option" data-hover="1" onClick="{{chooseOffline}}">
+<span style="width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; flex: none; background: rgba(224,164,58,0.14); border: 1px solid rgba(224,164,58,0.3); color: #F0B95A"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"></path></svg></span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 4px">
+<span style="font-weight: 600; font-size: 15px; color: #ECEFF3; display: flex; align-items: center; gap: 8px">Автономный режим <span style="display: inline-flex; align-items: center; height: 18px; padding: 0 7px; border-radius: 5px; background: rgba(224,164,58,0.14); border: 1px solid rgba(224,164,58,0.32); color: #F0B95A; font-size: 10px; font-weight: 700; letter-spacing: 0.06em">OFFLINE</span></span>
+<span style="font-size: 13px; line-height: 1.45; color: #A3ADBB">Локальный никнейм без входа: одиночная игра и сеть LAN.</span>
+</span>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8A94A3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+</button>
+</div>
+</sc-if>
+
+<sc-if value="{{stepMs}}" hint-placeholder-val="{{false}}">
+<div class="ms-step">
+<sc-if value="{{msStarting}}" hint-placeholder-val="{{false}}">
+<span class="ms-spin"><svg width="28" height="28" viewBox="0 0 21 21" aria-hidden="true"><rect x="0" y="0" width="10" height="10" fill="#F25022"></rect><rect x="11" y="0" width="10" height="10" fill="#7FBA00"></rect><rect x="0" y="11" width="10" height="10" fill="#00A4EF"></rect><rect x="11" y="11" width="10" height="10" fill="#FFB900"></rect></svg></span>
+<span style="font-weight: 600; font-size: 16px">Запрашиваю код у Microsoft…</span>
+</sc-if>
+
+<sc-if value="{{msWaiting}}" hint-placeholder-val="{{true}}">
+<span style="font-size: 14px; color: #C9D0DA">Введите код на странице <b style="color: #ECEFF3">{{msHost}}</b></span>
+<button class="ms-code" onClick="{{msCopy}}" aria-label="Код {{msCode}}, нажмите, чтобы скопировать">{{msCode}}</button>
+<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px">
+<button class="ghost" onClick="{{msCopy}}">{{msCopyLabel}}</button>
+<button class="accent" onClick="{{msOpenPage}}" style="background: {{accent}}">Открыть {{msHost}}</button>
+</div>
+<div class="ms-wait"><span class="wt-spin"></span>Ждём подтверждения в браузере…</div>
+<p class="ms-note">Код уже скопирован. Войдите в учётную запись Microsoft, к которой привязана Minecraft: Java Edition. Код действует 15 минут.</p>
+</sc-if>
+
+<sc-if value="{{msFailed}}" hint-placeholder-val="{{false}}">
+<span class="ms-fail" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg></span>
+<span style="font-weight: 600; font-size: 16px">Войти не получилось</span>
+<p class="ms-note" role="alert" style="color: #F2C0B6">{{msErr}}</p>
+<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px">
+<button class="ghost" onClick="{{backModal}}">Назад</button>
+<button class="accent" onClick="{{msRetry}}" style="background: {{accent}}">Попробовать снова</button>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{stepOffline}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; gap: 16px; align-items: center; padding: 14px; border-radius: 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08)">
+<span style="display: block; width: 64px; height: 64px; border-radius: 12px; overflow: hidden; flex: none; box-shadow: 0 0 0 1px rgba(255,255,255,0.1)"><span style="display: block; width: 8px; height: 8px; background: {{newHead.bg}}; box-shadow: {{newHead.sh8}}"></span></span>
+<span style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+<span style="font-weight: 600; font-size: 17px; color: #ECEFF3">{{nickPreview}}</span>
+<span style="display: inline-flex; align-self: flex-start; align-items: center; height: 18px; padding: 0 7px; border-radius: 5px; background: rgba(224,164,58,0.14); border: 1px solid rgba(224,164,58,0.32); color: #F0B95A; font-size: 10px; font-weight: 700; letter-spacing: 0.06em">OFFLINE</span>
+</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="nick" style="font-size: 13px; color: #C9D0DA">Никнейм</label>
+<input id="nick" class="field" value="{{nick}}" onChange="{{onNick}}" placeholder="Например, Builder_42" maxLength="16" autoComplete="off" spellcheck="false" style="font-size: 15px">
+<span style="font-size: 12px; color: {{nickHintColor}}">{{nickHint}}</span>
+<span role="status" style="font-size: 12px; color: {{nickSkinColor}}">{{nickSkinNote}}</span>
+</div>
+<p style="margin: 0; font-size: 12px; line-height: 1.5; color: #8A94A3">Офлайн-аккаунт не может заходить на лицензионные серверы. Скин виден только у вас в игре: другие игроки на серверах его не увидят.</p>
+<button class="accent" disabled="{{nickInvalid}}" onClick="{{addOffline}}" style="background: {{accent}}; min-height: 48px; font-size: 15px">Добавить аккаунт</button>
+</div>
+</sc-if>
+</div>
+</div>
+</sc-if>
+
+
+<sc-if value="{{aiOpen}}" hint-placeholder-val="{{false}}">
+<div class="veil" style="position: fixed; inset: 0; z-index: 70; background: rgba(4,6,9,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; padding: 16px">
+<div class="glass-pop ai-modal" role="dialog" aria-modal="true" aria-labelledby="h-ai">
+
+<div class="ai-head">
+<span class="ai-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"></path></svg></span>
+<span class="scard-t" style="flex: 1"><h2 id="h-ai">Собрать с ИИ</h2><span>Опишите идею — нейросеть подберёт совместимые моды</span></span>
+<span class="ai-status"><span class="dot"></span>ИИ подключен</span>
+<button class="ghost icon-btn" aria-label="Закрыть" data-sfx="close" onClick="{{closeAi}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div class="ai-prompt">
+<div style="display: flex; flex-wrap: wrap; gap: 10px">
+<label style="flex: 1 1 320px; display: block">
+<span class="sr">Идея сборки</span>
+<input class="field" value="{{aiPrompt}}" onChange="{{onAiPrompt}}" placeholder="Например: хоррор сборка с туманом и звуками" style="min-height: 50px; font-size: 15px">
+</label>
+<button class="btn-emerald" onClick="{{aiGenerate}}" disabled="{{aiBusy}}" style="min-height: 50px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path></svg>
+{{aiBtnLabel}}
+</button>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{aiExamples}}" as="ex" hint-placeholder-count="6">
+<button class="chip" onClick="{{ex.pick}}">{{ex.label}}</button>
+</sc-for>
+</div>
+</div>
+
+<div class="ai-body">
+<sc-if value="{{aiEmpty}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 36px 12px; text-align: center">
+<span style="width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.25); color: #7FE3A6"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"></path><path d="M3 8l9 5 9-5M12 13v8"></path></svg></span>
+<span style="font-weight: 600; font-size: 15px; color: #ECEFF3">Опишите сборку мечты</span>
+<span style="font-size: 13px; color: #8A94A3; max-width: 380px; line-height: 1.5">Например, «хоррор с туманом» или «ПвП без лагов» — или выберите готовую тему выше.</span>
+</div>
+</sc-if>
+
+<sc-if value="{{aiLoading}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 12px" aria-live="polite">
+<span style="font-size: 13px; color: #C9D0DA">{{aiLoadingText}}</span>
+<span class="skel" style="width: 55%; height: 18px"></span>
+<span class="skel" style="width: 90%"></span>
+<span class="skel" style="width: 78%"></span>
+<span class="skel" style="width: 84%"></span>
+<span class="skel" style="width: 66%"></span>
+</div>
+</sc-if>
+
+<sc-if value="{{aiHasResult}}" hint-placeholder-val="{{false}}">
+<div class="ai-sum">
+<span style="display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1 1 280px">
+<span style="font-family: 'Unbounded', sans-serif; font-weight: 600; font-size: 20px; color: #ECEFF3">{{ai.title}}</span>
+<span style="font-size: 14px; line-height: 1.5; color: #C2CAD4">{{ai.description}}</span>
+</span>
+<span style="display: flex; flex-wrap: wrap; align-content: flex-start; gap: 6px">
+<span class="tagchip">{{ai.loader}}</span>
+<span class="tagchip" style="font-family: 'JetBrains Mono', monospace">{{ai.version}}</span>
+<span class="tagchip" style="color: {{aiSourceColor}}">{{aiSourceLabel}}</span>
+</span>
+</div>
+<sc-for list="{{aiGroups}}" as="g" hint-placeholder-count="3">
+<div class="ai-group">
+<div class="ai-group-h"><span>{{g.title}}</span><span>{{g.count}}</span></div>
+<div class="ai-group-list">
+<sc-for list="{{g.mods}}" as="am" hint-placeholder-count="4">
+<button class="{{am.cls}}" aria-pressed="{{am.checked}}" disabled="{{dlBusy}}" onClick="{{am.toggle}}" data-sfx="toggle">
+<span class="{{am.ckCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#04210F" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<span style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><span style="font-weight: 600; font-size: 14px; color: #ECEFF3">{{am.name}}</span><span class="tagchip" style="height: 20px; font-size: 11px; font-weight: 500">{{am.category}}</span></span>
+<span style="font-size: 12px; line-height: 1.45; color: #A3ADBB">{{am.description}}</span>
+</span>
+<span style="flex: none; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8A94A3">{{am.size}}</span>
+</button>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</sc-if>
+</div>
+
+<sc-if value="{{aiHasResult}}" hint-placeholder-val="{{false}}">
+<div class="ai-foot">
+<span style="font-size: 13px; color: #A3ADBB">Модов в сборке: <b style="color: #ECEFF3">{{aiCount}}</b> · Примерный вес: <b style="color: #ECEFF3">{{aiWeight}}</b></span>
+<sc-if value="{{dlIdle}}" hint-placeholder-val="{{true}}">
+<button class="btn-emerald lg" onClick="{{startDownload}}" disabled="{{aiNoneChecked}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg>
+Скачать и установить сборку
+</button>
+</sc-if>
+<sc-if value="{{dlBusy}}" hint-placeholder-val="{{false}}">
+<div style="flex: 1 1 360px; max-width: 460px; display: flex; flex-direction: column; gap: 8px" aria-live="polite">
+<div style="display: flex; justify-content: space-between; gap: 10px; font-size: 12px"><span style="color: #C9D0DA; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{dlStage}}</span><span style="font-family: 'JetBrains Mono', monospace; color: #7FE3A6">{{dlProgress}}%</span></div>
+<div class="dlbar"><span style="width: {{dlProgress}}%"></span></div>
+</div>
+</sc-if>
+<sc-if value="{{dlDone}}" hint-placeholder-val="{{false}}">
+<span style="display: inline-flex; align-items: center; gap: 12px; flex-wrap: wrap">
+<span style="display: inline-flex; align-items: center; gap: 6px; color: #7FE3A6; font-size: 14px; font-weight: 600"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Сборка установлена</span>
+<button class="btn-emerald" onClick="{{go.installs}}" style="min-height: 44px">Открыть «Установки»</button>
+</span>
+</sc-if>
+</div>
+</sc-if>
+
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{niOpen}}" hint-placeholder-val="{{false}}">
+<div class="veil" style="position: fixed; inset: 0; z-index: 75; background: rgba(4,6,9,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; padding: 16px">
+<div class="glass-pop ni-modal" role="dialog" aria-modal="true" aria-labelledby="h-ni">
+<div style="display: flex; align-items: center; gap: 12px">
+<span class="scard-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5 9-5z"></path><path d="M3 13l9 5 9-5"></path><path d="M3 17.5l9 5 9-5"></path></svg></span>
+<span class="scard-t" style="flex: 1"><h2 id="h-ni">Новая установка</h2><span>Отдельный профиль со своей версией и загрузчиком</span></span>
+<button class="ghost icon-btn" aria-label="Закрыть" data-sfx="close" onClick="{{closeNewInst}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+<div class="sfield">
+<label class="slabel" for="ni-name">Название</label>
+<input id="ni-name" class="field" value="{{niName}}" onChange="{{onNiName}}" placeholder="Например: Выживание с друзьями" maxLength="40" autoComplete="off" style="min-height: 48px; font-size: 15px">
+</div>
+<div class="sfield">
+<span class="slabel">Загрузчик</span>
+<div role="radiogroup" aria-label="Загрузчик" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{niLoaders}}" as="nl" hint-placeholder-count="4">
+<button class="{{nl.cls}}" role="radio" aria-checked="{{nl.on}}" onClick="{{nl.pick}}">{{nl.label}}</button>
+</sc-for>
+</div>
+</div>
+<div class="sfield">
+<label class="slabel" for="ni-version">Версия игры</label>
+<div class="selwrap">
+<select id="ni-version" class="field sel" value="{{niVersion}}" onChange="{{onNiVersion}}">
+<sc-for list="{{niGroups}}" as="ng" hint-placeholder-count="1">
+<optgroup label="{{ng.label}}">
+<sc-for list="{{ng.options}}" as="no" hint-placeholder-count="6">
+<option value="{{no.value}}">{{no.label}}</option>
+</sc-for>
+</optgroup>
+</sc-for>
+</select>
+</div>
+<span style="font-size: 12px; color: #8A94A3">{{niVersionsNote}}</span>
+</div>
+<div class="snote">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
+<span>Будет создано: <b style="color: #ECEFF3">{{niPreview}}</b>. Игровые файлы скачаются при первом запуске.</span>
+</div>
+<sc-if value="{{hasNiErr}}" hint-placeholder-val="{{false}}"><span style="font-size: 13px; color: #F2998B">{{niErr}}</span></sc-if>
+<div style="display: flex; justify-content: flex-end; gap: 10px">
+<button class="ghost" data-sfx="close" onClick="{{closeNewInst}}">Отмена</button>
+<button class="btn-emerald" onClick="{{createInst}}">Создать установку</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{expOpen}}" hint-placeholder-val="{{false}}">
+<div class="veil" style="position: fixed; inset: 0; z-index: 80; background: rgba(4,6,9,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; padding: 16px">
+<div class="glass-pop ni-modal xp-modal" role="dialog" aria-modal="true" aria-labelledby="h-xp">
+<div style="display: flex; align-items: center; gap: 12px">
+<span class="scard-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"></path><path d="M12 13V7M9 10l3-3 3 3"></path></svg></span>
+<span class="scard-t" style="flex: 1; min-width: 0"><h2 id="h-xp">{{expTitle}}</h2><span>{{expSub}}</span></span>
+<sc-if value="{{expIdle}}" hint-placeholder-val="{{true}}"><button class="ghost icon-btn" aria-label="Закрыть" data-sfx="close" onClick="{{closeExp}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></sc-if>
+</div>
+
+<sc-if value="{{expLoading}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #A3ADBB; padding: 18px 0"><span class="xp-spin" aria-hidden="true"></span>Читаю установку и сверяю файлы с Modrinth…</div>
+</sc-if>
+
+<sc-if value="{{expFailed}}" hint-placeholder-val="{{false}}">
+<span role="alert" style="font-size: 13px; color: #F2998B">{{expErr}}</span>
+<div style="display: flex; justify-content: flex-end; gap: 10px">
+<button class="ghost" data-sfx="close" onClick="{{closeExp}}">Закрыть</button>
+<button class="btn-emerald" onClick="{{retryExp}}">Повторить</button>
+</div>
+</sc-if>
+
+<sc-if value="{{expForm}}" hint-placeholder-val="{{true}}">
+<div class="xp-fields">
+<div class="sfield"><label class="slabel" for="xp-name">Название</label><input id="xp-name" class="field" value="{{expName}}" onChange="{{onExpName}}" maxLength="60" autoComplete="off" disabled="{{expBusy}}"></div>
+<div class="sfield"><label class="slabel" for="xp-ver">Версия сборки</label><input id="xp-ver" class="field" value="{{expVersion}}" onChange="{{onExpVersion}}" maxLength="32" autoComplete="off" spellcheck="false" disabled="{{expBusy}}" style="font-family: 'JetBrains Mono', monospace"></div>
+<div class="sfield"><label class="slabel" for="xp-author">Автор</label><input id="xp-author" class="field" value="{{expAuthor}}" onChange="{{onExpAuthor}}" maxLength="40" autoComplete="off" disabled="{{expBusy}}"></div>
+<div class="sfield xp-wide"><label class="slabel" for="xp-sum">Описание</label><input id="xp-sum" class="field" value="{{expSummary}}" onChange="{{onExpSummary}}" maxLength="200" autoComplete="off" placeholder="Необязательно: пара слов о сборке" disabled="{{expBusy}}"></div>
+</div>
+
+<div class="xp-tree" role="group" aria-label="Что войдёт в сборку">
+<sc-for list="{{expGroups}}" as="g" hint-placeholder-count="4">
+<div class="xp-group">
+<div class="xp-ghead">
+<button class="xp-check" role="checkbox" aria-checked="{{g.all}}" onClick="{{g.toggleAll}}" disabled="{{expBusy}}"><span class="{{g.boxCls}}" aria-hidden="true"></span><span style="font-weight: 600">{{g.label}}</span></button>
+<span class="xp-count">{{g.count}}</span>
+<button class="ghost icon-btn xp-caret" aria-label="Показать файлы: {{g.label}}" aria-expanded="{{g.open}}" onClick="{{g.toggleOpen}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: rotate({{g.caretRot}}deg); transition: transform 0.15s"><path d="M9 6l6 6-6 6"></path></svg></button>
+</div>
+<sc-if value="{{g.open}}" hint-placeholder-val="{{false}}">
+<div class="xp-items">
+<sc-for list="{{g.items}}" as="it" hint-placeholder-count="3">
+<button class="xp-check xp-item" role="checkbox" aria-checked="{{it.on}}" onClick="{{it.toggle}}" disabled="{{expBusy}}">
+<span class="{{it.boxCls}}" aria-hidden="true"></span>
+<span class="xp-name" title="{{it.name}}">{{it.name}}</span>
+<sc-if value="{{it.remote}}" hint-placeholder-val="{{true}}"><span class="xp-tag is-mr">Modrinth</span></sc-if>
+<sc-if value="{{it.local}}" hint-placeholder-val="{{false}}"><span class="xp-tag">в overrides</span></sc-if>
+<span class="xp-size">{{it.size}}</span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+<span style="font-size: 12px; color: #A3ADBB">{{expSummaryLine}}</span>
+<span style="font-size: 12px; color: #8A94A3">Файлы, найденные на Modrinth, попадут в modrinth.index.json ссылками и скачаются при установке сборки. Остальное упакуется в overrides/.</span>
+
+<sc-if value="{{expBusy}}" hint-placeholder-val="{{false}}">
+<div class="upd-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{expPct}}"><span style="width: {{expPct}}%"></span></div>
+<span style="font-size: 12px; color: #A3ADBB; font-family: 'JetBrains Mono', monospace">{{expStage}}</span>
+</sc-if>
+<sc-if value="{{hasExpErr}}" hint-placeholder-val="{{false}}"><span role="alert" style="font-size: 13px; color: #F2998B">{{expErr}}</span></sc-if>
+<div style="display: flex; justify-content: flex-end; gap: 10px">
+<sc-if value="{{expIdle}}" hint-placeholder-val="{{true}}"><button class="ghost" data-sfx="close" onClick="{{closeExp}}">Отмена</button></sc-if>
+<button class="btn-emerald" onClick="{{expRun}}" disabled="{{expBusy}}">{{expRunLabel}}</button>
+</div>
+</sc-if>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{bkOpen}}" hint-placeholder-val="{{false}}">
+<div class="veil" style="position: fixed; inset: 0; z-index: 80; background: rgba(4,6,9,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; padding: 16px">
+<div class="glass-pop ni-modal bk-modal" role="dialog" aria-modal="true" aria-labelledby="h-bk">
+<div style="display: flex; align-items: center; gap: 12px">
+<span class="scard-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"></path><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg></span>
+<span class="scard-t" style="flex: 1; min-width: 0"><h2 id="h-bk">{{bkTitle}}</h2><span>{{bkSub}}</span></span>
+<button class="ghost icon-btn" aria-label="Закрыть" data-sfx="close" onClick="{{closeBk}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button class="ghost" onClick="{{bkOpenSaves}}" style="min-height: 36px; font-size: 13px">Папка saves</button>
+<sc-if value="{{bkReady}}" hint-placeholder-val="{{true}}"><button class="ghost" onClick="{{bkOpenDir}}" style="min-height: 36px; font-size: 13px">Папка бэкапов</button></sc-if>
+</div>
+<sc-if value="{{bkLoading}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #A3ADBB; padding: 14px 0"><span class="xp-spin" aria-hidden="true"></span>Читаю миры и бэкапы…</div>
+</sc-if>
+<sc-if value="{{hasBkErr}}" hint-placeholder-val="{{false}}"><span role="alert" style="font-size: 13px; color: #F2998B">{{bkErr}}</span></sc-if>
+<sc-if value="{{bkReady}}" hint-placeholder-val="{{true}}">
+<div class="bk-list">
+<sc-for list="{{bkWorlds}}" as="w" hint-placeholder-count="2">
+<div class="bk-world">
+<div class="bk-whead">
+<span class="bk-ico">
+<sc-if value="{{w.hasIcon}}" hint-placeholder-val="{{false}}"><img src="{{w.icon}}" alt="" width="40" height="40"></sc-if>
+<sc-if value="{{w.noIcon}}" hint-placeholder-val="{{true}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"></path></svg></sc-if>
+</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px"><span class="bk-name">{{w.name}}</span><span class="bk-meta">{{w.meta}}</span></span>
+<button class="btn-emerald" onClick="{{w.make}}" style="min-height: 36px; font-size: 13px">{{w.makeLabel}}</button>
+</div>
+<sc-if value="{{w.noBackups}}" hint-placeholder-val="{{false}}"><span class="bk-empty">Бэкапов этого мира пока нет</span></sc-if>
+<sc-for list="{{w.backups}}" as="e" hint-placeholder-count="2">
+<div class="bk-row">
+<span class="bk-when">{{e.when}}</span>
+<sc-if value="{{e.auto}}" hint-placeholder-val="{{false}}"><span class="xp-tag">авто</span></sc-if>
+<span class="bk-size">{{e.size}}</span>
+<button class="{{e.restoreCls}}" onClick="{{e.restore}}" title="{{e.file}}">{{e.restoreLabel}}</button>
+<button class="{{e.delCls}}" aria-label="Удалить бэкап {{e.file}}" title="Удалить бэкап" onClick="{{e.del}}">
+<sc-if value="{{e.delIdle}}" hint-placeholder-val="{{true}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6"></path><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"></path></svg></sc-if>
+<sc-if value="{{e.delConfirm}}" hint-placeholder-val="{{false}}"><span>Удалить?</span></sc-if>
+</button>
+</div>
+</sc-for>
+</div>
+</sc-for>
+<sc-if value="{{bkNoWorlds}}" hint-placeholder-val="{{false}}"><span class="bk-empty" style="padding: 8px 2px">В этой установке пока нет миров. Они появятся после первой игры.</span></sc-if>
+<sc-if value="{{hasOrphans}}" hint-placeholder-val="{{false}}">
+<div class="bk-world">
+<div class="bk-whead"><span style="flex: 1; display: flex; flex-direction: column; gap: 3px"><span class="bk-name">Миры, которых уже нет в saves</span><span class="bk-meta">Восстановление вернёт мир в папку saves</span></span></div>
+<sc-for list="{{bkOrphans}}" as="e" hint-placeholder-count="1">
+<div class="bk-row">
+<span class="bk-when">{{e.world}} · {{e.when}}</span>
+<sc-if value="{{e.auto}}" hint-placeholder-val="{{false}}"><span class="xp-tag">авто</span></sc-if>
+<span class="bk-size">{{e.size}}</span>
+<button class="{{e.restoreCls}}" onClick="{{e.restore}}" title="{{e.file}}">{{e.restoreLabel}}</button>
+<button class="{{e.delCls}}" aria-label="Удалить бэкап {{e.file}}" title="Удалить бэкап" onClick="{{e.del}}">
+<sc-if value="{{e.delIdle}}" hint-placeholder-val="{{true}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6"></path><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"></path></svg></sc-if>
+<sc-if value="{{e.delConfirm}}" hint-placeholder-val="{{false}}"><span>Удалить?</span></sc-if>
+</button>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+<span style="font-size: 12px; color: #8A94A3">Перед восстановлением текущая версия мира сохраняется отдельным бэкапом, так что ничего не потеряется.</span>
+</sc-if>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ilOpen}}" hint-placeholder-val="{{false}}">
+<div class="veil" style="position: fixed; inset: 0; z-index: 80; background: rgba(4,6,9,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; padding: 16px">
+<div class="glass-pop ni-modal" role="dialog" aria-modal="true" aria-labelledby="h-il" style="max-width: 520px">
+<div style="display: flex; align-items: center; gap: 12px">
+<span class="scard-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"></rect><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"></path></svg></span>
+<span class="scard-t" style="flex: 1; min-width: 0"><h2 id="h-il">{{ilTitle}}</h2><span>{{ilSub}}</span></span>
+<button class="ghost icon-btn" aria-label="Закрыть" data-sfx="close" onClick="{{closeIl}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<button class="{{ilRowCls}}" role="switch" aria-checked="{{ilCustom}}" data-sfx="toggle" onClick="{{ilToggle}}">
+<span class="trow-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"></path><circle cx="16" cy="6" r="2"></circle><circle cx="10" cy="12" r="2"></circle></svg></span>
+<span class="trow-t"><span>Индивидуальные настройки запуска</span><span>Своя память, Java и аргументы JVM только для этой установки</span></span>
+<span class="{{ilSwCls}}"></span>
+</button>
+
+<sc-if value="{{ilGlobal}}" hint-placeholder-val="{{true}}">
+<span style="font-size: 13px; line-height: 1.5; color: #A3ADBB">Выключено — используются общие настройки из «Настройки → Игра и Графика».</span>
+<span style="font-size: 12px; color: #8A94A3; font-family: 'JetBrains Mono', monospace">{{ilGlobalSummary}}</span>
+</sc-if>
+
+<sc-if value="{{ilCustom}}" hint-placeholder-val="{{false}}">
+<div class="sfield">
+<div style="display: flex; justify-content: space-between; align-items: baseline">
+<label class="slabel" for="il-ram">Оперативная память</label>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 500; color: #86DDA0">{{ilRam}} ГБ</span>
+</div>
+<input id="il-ram" type="range" min="2" max="{{ilRamMax}}" step="1" value="{{ilRam}}" onChange="{{onIlRam}}">
+</div>
+<div class="sfield">
+<label class="slabel" for="il-java">Java</label>
+<div class="selwrap">
+<select id="il-java" class="field sel" value="{{ilJava}}" onChange="{{onIlJava}}"><sc-for list="{{ilJavaOptions}}" as="jo" hint-placeholder-count="4"><option value="{{jo.value}}">{{jo.label}}</option></sc-for></select>
+</div>
+<sc-if value="{{hasIlJavaFit}}" hint-placeholder-val="{{false}}"><span role="note" style="font-size: 12px; line-height: 1.5; color: #F0B95A">{{ilJavaFit}}</span></sc-if>
+</div>
+<div class="sfield">
+<label class="slabel" for="il-jvm">Аргументы JVM</label>
+<input id="il-jvm" class="field" value="{{ilJvm}}" onChange="{{onIlJvm}}" spellcheck="false" style="min-height: 40px; font-family: 'JetBrains Mono', monospace; font-size: 12px">
+</div>
+</sc-if>
+
+<sc-if value="{{hasIlErr}}" hint-placeholder-val="{{false}}"><span role="alert" style="font-size: 13px; color: #F2998B">{{ilErr}}</span></sc-if>
+<div style="display: flex; justify-content: flex-end; gap: 10px">
+<button class="ghost" data-sfx="close" onClick="{{closeIl}}">Отмена</button>
+<button class="btn-emerald" onClick="{{ilSave}}">{{ilSaveLabel}}</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{dirOpen}}" hint-placeholder-val="{{false}}">
+<div class="veil" style="position: fixed; inset: 0; z-index: 85; background: rgba(4,6,9,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; padding: 16px">
+<div class="glass-pop ni-modal" role="dialog" aria-modal="true" aria-labelledby="h-gd" style="max-width: 520px">
+<div style="display: flex; align-items: center; gap: 12px">
+<span class="scard-t" style="flex: 1"><h2 id="h-gd">Сменить папку игры</h2><span>{{dirCheck}}</span></span>
+<sc-if value="{{dirIdle}}" hint-placeholder-val="{{true}}"><button class="ghost icon-btn" aria-label="Закрыть" data-sfx="close" onClick="{{closeDir}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></sc-if>
+</div>
+<div class="dircard" style="gap: 10px">
+<span class="dir-path" style="flex: 1" title="{{dirPath}}">{{dirPath}}</span>
+<sc-if value="{{dirIdle}}" hint-placeholder-val="{{true}}"><button class="nf-clear" onClick="{{pickAnotherDir}}">Другая…</button></sc-if>
+</div>
+<div role="radiogroup" aria-label="Что сделать" style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{dirModes}}" as="dmo" hint-placeholder-count="3">
+<button class="{{dmo.cls}}" role="radio" aria-checked="{{dmo.on}}" aria-disabled="{{dmo.off}}" onClick="{{dmo.pick}}">
+<span class="dir-radio"></span>
+<span style="display: flex; flex-direction: column; gap: 3px; text-align: left"><span style="font-weight: 600; font-size: 14px">{{dmo.label}}</span><span style="font-size: 12px; color: #8A94A3">{{dmo.desc}}</span></span>
+</button>
+</sc-for>
+</div>
+<sc-if value="{{dirBusy}}" hint-placeholder-val="{{false}}">
+<div class="upd-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{dirPct}}"><span style="width: {{dirPct}}%"></span></div>
+<span style="font-size: 12px; color: #A3ADBB; font-family: 'JetBrains Mono', monospace">{{dirLabel}}</span>
+</sc-if>
+<sc-if value="{{hasDirErr}}" hint-placeholder-val="{{false}}"><span role="alert" style="font-size: 13px; color: #F2998B">{{dirErr}}</span></sc-if>
+<span style="font-size: 12px; color: #8A94A3">Пока идёт смена, не закрывайте лаунчер. После неё окно перезагрузится.</span>
+<div style="display: flex; justify-content: flex-end; gap: 10px">
+<sc-if value="{{dirIdle}}" hint-placeholder-val="{{true}}"><button class="ghost" data-sfx="close" onClick="{{closeDir}}">Отмена</button></sc-if>
+<button class="btn-emerald" onClick="{{confirmDir}}" disabled="{{dirBusy}}">{{dirAction}}</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{updOpen}}" hint-placeholder-val="{{false}}">
+<div class="veil" style="position: fixed; inset: 0; z-index: 85; background: rgba(4,6,9,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; padding: 16px">
+<div class="glass-pop ni-modal" role="dialog" aria-modal="true" aria-labelledby="h-upd" style="max-width: 480px">
+<div style="display: flex; align-items: center; gap: 12px">
+<span class="scard-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"></path><path d="M21 4v5h-5"></path></svg></span>
+<span class="scard-t" style="flex: 1"><h2 id="h-upd">{{updTitle}}</h2><span>{{updMeta}}</span></span>
+</div>
+<div class="upd-notes" tabindex="0" aria-label="Что нового">{{updNotes}}</div>
+<sc-if value="{{updBusy}}" hint-placeholder-val="{{false}}">
+<div class="upd-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{updPct}}"><span style="width: {{updPct}}%"></span></div>
+<span style="font-size: 12px; color: #A3ADBB; font-family: 'JetBrains Mono', monospace">{{updProgress}}</span>
+<span style="font-size: 12px; color: #8A94A3">Подпись файла проверяется перед установкой. После установки лаунчер перезапустится сам.</span>
+</sc-if>
+<sc-if value="{{hasUpdErr}}" hint-placeholder-val="{{false}}"><span role="alert" style="font-size: 13px; color: #F2998B">{{updErr}}</span></sc-if>
+<div style="display: flex; justify-content: flex-end; gap: 10px">
+<sc-if value="{{updIdle}}" hint-placeholder-val="{{true}}"><button class="ghost" data-sfx="close" onClick="{{closeUpdate}}">Позже</button></sc-if>
+<button class="btn-emerald" onClick="{{updInstall}}" disabled="{{updBusy}}">{{updInstallLabel}}</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{srvOpen}}" hint-placeholder-val="{{false}}">
+<div class="veil" style="position: fixed; inset: 0; z-index: 75; background: rgba(4,6,9,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; padding: 16px">
+<div class="glass-pop ni-modal" role="dialog" aria-modal="true" aria-labelledby="h-srv" style="max-width: 440px">
+<div style="display: flex; align-items: center; gap: 12px">
+<span class="scard-t" style="flex: 1"><h2 id="h-srv">{{srvTitle}}</h2><span>{{srvSub}}</span></span>
+<button class="ghost icon-btn" aria-label="Закрыть" data-sfx="close" onClick="{{closeSrv}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+<sc-if value="{{srvIsAdd}}" hint-placeholder-val="{{true}}">
+<div class="sfield">
+<label class="slabel" for="srv-name">Название</label>
+<input id="srv-name" class="field" value="{{srvName}}" onChange="{{onSrvName}}" placeholder="Например: Сервер друзей" maxLength="40" autoComplete="off" style="min-height: 46px">
+</div>
+</sc-if>
+<div class="sfield">
+<label class="slabel" for="srv-addr">Адрес сервера</label>
+<input id="srv-addr" class="field" value="{{srvAddr}}" onChange="{{onSrvAddr}}" placeholder="play.example.org или 192.168.1.20:25565" autoComplete="off" spellcheck="false" style="min-height: 46px; font-family: 'JetBrains Mono', monospace">
+<span style="font-size: 12px; color: #8A94A3">Порт можно не указывать: по умолчанию 25565 или из SRV-записи домена.</span>
+</div>
+<sc-if value="{{hasSrvErr}}" hint-placeholder-val="{{false}}"><span style="font-size: 13px; color: #F2998B">{{srvErr}}</span></sc-if>
+<div style="display: flex; justify-content: flex-end; gap: 10px">
+<button class="ghost" data-sfx="close" onClick="{{closeSrv}}">Отмена</button>
+<button class="btn-emerald" onClick="{{saveSrv}}">{{srvAction}}</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{renameOpen}}" hint-placeholder-val="{{false}}">
+<div class="veil" style="position: fixed; inset: 0; z-index: 75; background: rgba(4,6,9,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; padding: 16px">
+<div class="glass-pop ni-modal" role="dialog" aria-modal="true" aria-labelledby="h-rn" style="max-width: 420px">
+<div style="display: flex; align-items: center; gap: 12px">
+<span class="scard-t" style="flex: 1"><h2 id="h-rn">Переименовать установку</h2><span>Папка и файлы не меняются</span></span>
+<button class="ghost icon-btn" aria-label="Закрыть" data-sfx="close" onClick="{{closeRename}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+<div class="sfield">
+<label class="slabel" for="rn-name">Название</label>
+<input id="rn-name" class="field" value="{{renameName}}" onChange="{{onRenameName}}" maxLength="40" autoComplete="off" style="min-height: 48px; font-size: 15px">
+</div>
+<sc-if value="{{hasRenameErr}}" hint-placeholder-val="{{false}}"><span style="font-size: 13px; color: #F2998B">{{renameErr}}</span></sc-if>
+<div style="display: flex; justify-content: flex-end; gap: 10px">
+<button class="ghost" data-sfx="close" onClick="{{closeRename}}">Отмена</button>
+<button class="btn-emerald" onClick="{{saveRename}}">Сохранить</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{wtOpen}}" hint-placeholder-val="{{false}}">
+<div class="veil" style="position: fixed; inset: 0; z-index: 75; background: rgba(4,6,9,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; padding: 16px">
+<div class="glass-pop ni-modal wt-modal" role="dialog" aria-modal="true" aria-labelledby="h-wt">
+<div style="display: flex; align-items: center; gap: 12px">
+<span class="scard-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M10 13h6M13.5 10.5L16 13l-2.5 2.5"></path></svg></span>
+<span class="scard-t" style="flex: 1; min-width: 0"><h2 id="h-wt">Перенести «{{wtName}}»</h2><span>{{wtMeta}}</span></span>
+<button class="ghost icon-btn" aria-label="Закрыть" data-sfx="close" onClick="{{closeWt}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+<span class="slabel">В какую установку скопировать</span>
+<div class="wt-list" role="list">
+<sc-for list="{{wtTargets}}" as="t" hint-placeholder-count="4">
+<button class="{{t.cls}}" role="listitem" onClick="{{t.pick}}">
+<span class="wt-ico">
+<sc-if value="{{t.isVanilla}}" hint-placeholder-val="{{true}}"><svg width="20" height="20" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="0" width="16" height="16" fill="#7A5232"></rect><rect x="0" y="0" width="16" height="5" fill="#5DA03A"></rect><rect x="2" y="5" width="2" height="2" fill="#5DA03A"></rect><rect x="7" y="5" width="2" height="3" fill="#5DA03A"></rect><rect x="12" y="5" width="2" height="2" fill="#5DA03A"></rect><rect x="4" y="10" width="2" height="2" fill="#6A4529"></rect><rect x="10" y="12" width="2" height="2" fill="#8C6440"></rect></svg></sc-if>
+<sc-if value="{{t.isForge}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4h10l3 2h-4v2l2 3.5H5L7 8V6H3.5z" fill="#E09A5B"></path><rect x="4" y="12" width="9" height="2" rx=".5" fill="#B8743F"></rect></svg></sc-if>
+<sc-if value="{{t.isFabric}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="2.5" fill="#DBD0B4"></rect><path d="M2 11L11 2M5 14.5L14.5 5" stroke="#9E8F6C" stroke-width="1.8"></path></svg></sc-if>
+</span>
+<span class="wt-main"><span class="wt-t">{{t.install}}</span><span class="wt-s">{{t.name}}</span></span>
+<sc-if value="{{t.same}}" hint-placeholder-val="{{false}}"><span class="wt-chip">та же версия</span></sc-if>
+<sc-if value="{{t.busy}}" hint-placeholder-val="{{false}}"><span class="wt-spin" aria-label="Копирование"></span></sc-if>
+<sc-if value="{{t.idle}}" hint-placeholder-val="{{true}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A94A3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></sc-if>
+</button>
+</sc-for>
+</div>
+<div class="snote">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
+<span>Мир копируется: оригинал в общей папке останется. Если в установке уже есть мир с таким именем, копия получит номер.</span>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{skinModal}}" hint-placeholder-val="{{false}}">
+<div class="veil" style="position: fixed; inset: 0; z-index: 70; background: rgba(4,6,9,0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; padding: 16px">
+<div class="glass-pop" role="dialog" aria-modal="true" aria-labelledby="skin-title" style="width: 100%; max-width: 760px; max-height: calc(100vh - 32px); overflow-y: auto; background: rgba(18,23,30,0.78); border: 1px solid rgba(255,255,255,0.14); backdrop-filter: blur(28px) saturate(160%); -webkit-backdrop-filter: blur(28px) saturate(160%); border-radius: 26px; padding: 24px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 40px 90px -24px rgba(0,0,0,0.9); display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px">
+<h2 id="skin-title" style="margin: 0; flex: 1; font-family: 'Unbounded', sans-serif; font-weight: 600; font-size: 19px">Управление скином</h2>
+<button class="ghost icon-btn" aria-label="Закрыть" data-sfx="close" onClick="{{closeSkin}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 18px">
+<div style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 12px">
+<div style="position: relative; height: 300px; border-radius: 18px; background: rgba(0,0,0,0.28); border: 1px solid rgba(255,255,255,0.08); perspective: 900px; overflow: hidden">
+<div ref="{{previewRef}}" class="p3 spin-y" style="top: 50%">
+<sc-for list="{{previewParts}}" as="p" hint-placeholder-count="6">
+<div class="p3" style="transform: translate3d({{p.x}}px, {{p.y}}px, 0px)">
+<sc-for list="{{p.faces}}" as="f" hint-placeholder-count="6">
+<div class="face skinprev" style="left: {{f.l}}px; top: {{f.t}}px; width: {{f.w}}px; height: {{f.h}}px; background-size: {{prevSize}}px {{prevSize}}px; background-position: {{f.bp}}; transform: {{f.tf}}; filter: brightness({{f.light}})"></div>
+</sc-for>
+<div class="p3" style="transform: scale3d({{p.ovs}})">
+<sc-for list="{{p.ov}}" as="f" hint-placeholder-count="6">
+<div class="face skinprev" style="left: {{f.l}}px; top: {{f.t}}px; width: {{f.w}}px; height: {{f.h}}px; background-size: {{prevSize}}px {{prevSize}}px; background-position: {{f.bp}}; transform: {{f.tf}}; filter: brightness({{f.light}})"></div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+<div role="radiogroup" aria-label="Модель" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 4px; border-radius: 13px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08)">
+<button class="seg {{pvClassicCls}}" role="radio" aria-checked="{{pvClassic}}" onClick="{{setPvClassic}}">Classic · 4px</button>
+<button class="seg {{pvSlimCls}}" role="radio" aria-checked="{{pvSlim}}" onClick="{{setPvSlim}}">Slim · 3px</button>
+</div>
+<span class="skin-game-note">{{skinGameNote}}</span>
+</div>
+
+<div style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 12px">
+<label class="{{dropCls}}" onDragOver="{{onDragOver}}" onDragLeave="{{onDragLeave}}" onDrop="{{onDropSkin}}" style="min-height: 170px">
+<input type="file" accept="image/png,.png" class="sr" onChange="{{onSkinFile}}">
+<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"></path></svg>
+<span style="font-weight: 600; font-size: 15px; color: #ECEFF3">Перетащите PNG сюда</span>
+<span style="font-size: 12px; color: #8A94A3">или нажмите, чтобы выбрать файл · 64×64 или 64×32</span>
+</label>
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08)">
+<img src="{{skinPreviewSrc}}" alt="Развёртка текстуры" width="64" height="64" style="width: 64px; height: 64px; image-rendering: pixelated; border-radius: 6px; background: rgba(255,255,255,0.05)">
+<span style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<span style="font-size: 13px; font-weight: 600; color: #ECEFF3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{skinFileName}}</span>
+<span style="font-size: 12px; color: #8A94A3">{{skinModelLabel}}</span>
+</span>
+</div>
+<sc-if value="{{hasSkinErr}}" hint-placeholder-val="{{false}}"><span style="font-size: 13px; color: #F2998B">{{skinErr}}</span></sc-if>
+<div style="flex: 1"></div>
+<button class="accent" onClick="{{applySkin}}" style="background: {{accent}}; min-height: 50px; font-size: 15px">Применить и сохранить</button>
+<div style="display: flex; gap: 10px">
+<button class="ghost" onClick="{{resetSkin}}" style="flex: 1">Стандартный скин</button>
+<button class="ghost" data-sfx="close" onClick="{{closeSkin}}" style="flex: 1">Отмена</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
