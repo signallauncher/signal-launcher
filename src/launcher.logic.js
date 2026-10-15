@@ -1,5 +1,6 @@
 // Signal Launcher component logic. Exported from the design canvas.
 import { locale as LOCALE, decimal, plural as pluralize, lang as LANG, LANGS, setLang } from './i18n/index.js';
+import { SkinViewer } from './skin-viewer.js';
 // Calls into the desktop backend go through window.SignalBridge (see src/main.js).
 export default function defineLogic(DCLogic) {
 class Component extends DCLogic {
@@ -150,16 +151,17 @@ class Component extends DCLogic {
       dlStage: '',
       customInstalls: [],
       cosTab: 'cape',
-      cos: { cape: null, hat: null, aura: null },
-      savedCos: { cape: null, hat: null, aura: null },
-      cosSaved: false
+      cos: { cape: null, hat: null, face: null, back: null, pet: null, aura: null },
+      savedCos: { cape: null, hat: null, face: null, back: null, pet: null, aura: null },
+      cosSaved: false,
+      // Look on the Signal server: idle | busy | synced | empty | unclaimed | local | error
+      cosSync: { state: 'idle', msg: '' }
     };
     this.angle = 0;
     this.tilt = -6;
     this.drag = null;
     this.modelEl = null;
     this.angleEl = null;
-    this.headEl = null;
     this.stageEl = null;
     this.rootEl = null;
     this.prevEl = null;
@@ -172,7 +174,6 @@ class Component extends DCLogic {
     this.headPitch = 0;
     this.shaderClock = 0;
     this.lastSaved = '';
-    this.headRef = (el) => { this.headEl = el; };
   }
 
   componentDidMount() {
@@ -205,7 +206,11 @@ class Component extends DCLogic {
         keep.forEach((k) => { if (saved[k] !== undefined) next[k] = saved[k]; });
         if (next.opts) next.opts = Object.assign({}, this.state.opts, next.opts);
         if (next.bgMode === 'shader') next.bgMode = 'image';
-        if (next.savedCos) next.cos = Object.assign({}, next.savedCos);
+        if (next.savedCos) {
+          // looks saved before the face/back/pet slots existed lack those keys
+          next.savedCos = Object.assign({}, this.state.savedCos, next.savedCos);
+          next.cos = Object.assign({}, next.savedCos);
+        }
         if (saved.bgFileData) { next.bgFileUrl = saved.bgFileData; next.bgFileData = saved.bgFileData; next.bgFileType = 'image'; }
         else if (next.bgMode === 'file') next.bgMode = 'image';
         this.setState(next);
@@ -232,6 +237,7 @@ class Component extends DCLogic {
         this.bgLayer.style.transform = 'translate3d(' + this.px.toFixed(2) + 'px, ' + this.py.toFixed(2) + 'px, 0)';
       }
       this.applyView();
+      if (this.viewer) this.viewer.render(dt);
       this.raf = requestAnimationFrame(tick);
     };
     this.raf = requestAnimationFrame(tick);
@@ -239,7 +245,7 @@ class Component extends DCLogic {
     this.loadVersions(false);
     this.loadInstances(true);
     this.loadMemory();
-    this.loadAccounts();
+    this.loadAccounts().then(() => this.syncLook());
     window.SignalBridge.onModpackDrop((path) => this.importModpack(path));
     // A .png dropped anywhere opens «Управление скином» with it.
     window.SignalBridge.onSkinDrop((file) => {
@@ -266,8 +272,10 @@ class Component extends DCLogic {
     });
   }
 
-  componentDidUpdate() {
+  componentDidUpdate(prevProps, prevState) {
+    if (prevState && prevState.accountId !== this.state.accountId) this.syncLook();
     this.syncVars();
+    this.syncViewer();
     this.persist();
   }
 
@@ -285,6 +293,7 @@ class Component extends DCLogic {
     clearTimeout(this.srvDelTimer);
     clearTimeout(this.updTimer);
     if (this.unsubNotifs) this.unsubNotifs();
+    if (this.viewer) { this.viewer.dispose(); this.viewer = null; }
     this.msAttempt = (this.msAttempt || 0) + 1;
   }
 
@@ -318,10 +327,83 @@ class Component extends DCLogic {
     }
   }
 
+  // The selected profile as the Signal Companion API knows it; null until that account is loaded.
+  companionProfile() {
+    const acc = this.allAccounts().find((a) => a.id === this.state.accountId);
+    if (!acc) return null;
+    return acc.type === 'ms' ? { kind: 'ms', id: acc.id, name: acc.name } : { kind: 'offline', id: null, name: acc.name };
+  }
+
+  // Only ids the wardrobe still has; a back item that takes the cape's place wins over the cape.
+  cleanLook(look) {
+    const d = this.cosDefs();
+    const out = {};
+    ['hat', 'face', 'back', 'pet', 'cape', 'aura'].forEach((k) => {
+      out[k] = look && d[k].some((c) => c.id === look[k]) ? look[k] : null;
+    });
+    const back = d.back.find((b) => b.id === out.back);
+    if (back && back.noCape) out.cape = null;
+    return out;
+  }
+
+  // Loads the profile's look from the Signal server. The latest request wins when profiles switch quickly.
+  syncLook() {
+    const profile = this.companionProfile();
+    if (!profile) return;
+    const req = (this.lookReq || 0) + 1;
+    this.lookReq = req;
+    this.setState({ cosSync: { state: 'busy', msg: '' } });
+    window.SignalBridge.companionLook(profile)
+      .then((r) => {
+        if (req !== this.lookReq) return;
+        if (r === null && window.SignalBridge.isTauri === false) this.setState({ cosSync: { state: 'local', msg: '' } });
+        else if (r === null) this.setState({ cosSync: { state: 'unclaimed', msg: '' } });
+        else if (r.rev > 0) {
+          const look = this.cleanLook(r.look);
+          this.setState({ cos: look, savedCos: look, cosSync: { state: 'synced', msg: '' } });
+        } else this.setState({ cosSync: { state: 'empty', msg: '' } });
+      })
+      .catch((e) => { if (req === this.lookReq) this.setState({ cosSync: { state: 'error', msg: String(e) } }); });
+  }
+
+  // Sends the look for the selected profile; an offline nickname gets bound to this computer here.
+  pushLook(look) {
+    const profile = this.companionProfile();
+    if (!profile) return;
+    const req = (this.lookReq || 0) + 1;
+    this.lookReq = req;
+    this.setState({ cosSync: { state: 'busy', msg: '' } });
+    window.SignalBridge.companionSaveLook(profile, look)
+      .then((r) => { if (req === this.lookReq) this.setState({ cosSync: { state: r ? 'synced' : 'local', msg: '' } }); })
+      .catch((e) => { if (req === this.lookReq) this.setState({ cosSync: { state: 'error', msg: String(e) } }); });
+  }
+
+  // Push skin, outer layer, pose and worn cosmetics into the WebGL model.
+  syncViewer() {
+    const v = this.viewer;
+    if (!v) return;
+    const s = this.state;
+    const d = this.cosDefs();
+    v.setSkin(s.skinUrl || '/assets/img/default-skin.png', s.slim);
+    v.setLayerVisible(s.showLayer);
+    v.setPose(s.pose);
+    v.setAnimate(s.opts.animations && !this.reduceMotion);
+    ['hat', 'face', 'back', 'pet'].forEach((slot) => {
+      const it = d[slot].find((c) => c.id === s.cos[slot]);
+      v.setAccessory(slot, it ? '/assets/cosmetics/models/' + it.model + '.glb' : null);
+    });
+    const cape = d.cape.find((c) => c.id === s.cos.cape);
+    v.setAura(s.cos.aura || null);
+    v.setCape(cape ? {
+      key: cape.id,
+      texture: '/assets/cosmetics/capes/' + cape.id + '.png',
+      emissive: '/assets/cosmetics/capes/' + cape.id + '_e.png'
+    } : null);
+  }
+
   applyView() {
-    if ((!this.headEl || !this.headEl.isConnected) && this.modelEl) this.headEl = this.modelEl.querySelector('[data-part="head"]');
     if (this.modelEl) this.modelEl.style.transform = 'rotateX(' + this.tilt + 'deg) rotateY(' + this.angle + 'deg)';
-    if (this.headEl) this.headEl.style.transform = 'rotateY(' + this.headYaw.toFixed(2) + 'deg) rotateX(' + this.headPitch.toFixed(2) + 'deg)';
+    if (this.viewer) this.viewer.setView(this.angle, this.tilt, this.headYaw, this.headPitch);
     if (this.angleEl) this.angleEl.textContent = Math.round(((this.angle % 360) + 360) % 360) + '°';
   }
 
@@ -357,7 +439,6 @@ class Component extends DCLogic {
   }
 
   skinModel(slim, s, withAnim) {
-    const cos = this.state.cos || {};
     const showLayer = this.state.showLayer;
     const shade = { front: 1, back: 0.72, right: 0.82, left: 0.82, top: 1.12, bottom: 0.6 };
     const faces = (u, v, w, h, d) => {
@@ -400,10 +481,7 @@ class Component extends DCLogic {
         part: withAnim ? p.part : '',
         faces: faces(p.uv[0], p.uv[1], w, h, d),
         ov: showLayer ? faces(p.ov[0], p.ov[1], w, h, d) : [],
-        ovs: ((w + p.inflate) / w) + ', ' + ((h + p.inflate) / h) + ', ' + ((d + p.inflate) / d),
-        acc: withAnim ? (p.part === 'head' ? this.hatFaces(cos.hat) : (p.part === 'body' ? this.capeFaces(cos.cape) : [])) : [],
-        accAnim: withAnim ? (p.part === 'body' && cos.cape ? 'cape-sway' : (p.part === 'head' && cos.hat === 'halo' ? 'halo-bob' : '')) : '',
-        accOrigin: p.part === 'body' ? '0px -66px -29px' : '0px 0px 0px'
+        ovs: ((w + p.inflate) / w) + ', ' + ((h + p.inflate) / h) + ', ' + ((d + p.inflate) / d)
       };
     });
   }
@@ -789,36 +867,63 @@ class Component extends DCLogic {
       winClose: () => window.SignalBridge.close(),
       showStage: s.tab === 'play' || s.tab === 'cosmetics',
       isCosmetics: s.tab === 'cosmetics',
-      hasAura: !!(s.cos && s.cos.aura),
-      auraBack: this.auraParticles(s.cos && s.cos.aura).filter((x) => !x.front),
-      auraFront: this.auraParticles(s.cos && s.cos.aura).filter((x) => x.front),
-      cosTabs: [['cape', 'Плащи'], ['hat', 'Аксессуары'], ['aura', 'Ауры']].map((t) => ({
+      cosTabs: [['hat', 'Голова'], ['face', 'Лицо'], ['back', 'Спина'], ['pet', 'Питомец'], ['cape', 'Плащи'], ['aura', 'Ауры']].map((t) => ({
         label: t[1], on: s.cosTab === t[0], cls: s.cosTab === t[0] ? 'is-active' : '', pick: () => this.setState({ cosTab: t[0] })
       })),
-      cosItems: (this.cosDefs()[s.cosTab] || []).map((c) => {
-        const on = s.cos[s.cosTab] === c.id;
-        const rc = { 'Обычный': '#A3ADBB', 'Редкий': '#7FB6FF', 'Эпический': '#C9A8FF', 'Легендарный': '#F2C27A' }[c.rarity] || '#A3ADBB';
-        return {
-          name: c.name, rarity: c.rarity, rarityColor: rc,
-          preview: c.preview || c.outer, glow: on && c.glow && c.glow !== 'none' ? c.glow : 'none',
-          on: on, cls: on ? 'cos-item is-on' : 'cos-item',
-          state: on ? 'Надето · нажмите, чтобы снять' : 'Примерить', stateColor: on ? '#86DDA0' : '#8A94A3',
-          pick: () => this.setState({ cos: Object.assign({}, s.cos, { [s.cosTab]: on ? null : c.id }), cosSaved: false })
-        };
-      }),
+      cosItems: (() => {
+        const d = this.cosDefs();
+        // A pack or a katana and a cape take the same spot on the back, so wearing one takes the other off.
+        const wornBack = d.back.find((b) => b.id === s.cos.back);
+        return (d[s.cosTab] || []).map((c) => {
+          const on = s.cos[s.cosTab] === c.id;
+          const bumps = !on && (s.cosTab === 'back' ? c.noCape && s.cos.cape : s.cosTab === 'cape' && wornBack && wornBack.noCape);
+          const rc = { 'Обычный': '#A3ADBB', 'Редкий': '#7FB6FF', 'Эпический': '#C9A8FF', 'Легендарный': '#F2C27A' }[c.rarity] || '#A3ADBB';
+          return {
+            name: c.name, rarity: c.rarity, rarityColor: rc,
+            preview: c.icon
+              ? 'url(/assets/cosmetics/icons/' + c.icon + '.png) center / contain no-repeat, radial-gradient(circle at 50% 62%, rgba(255,255,255,0.09), rgba(255,255,255,0) 65%), #0E1218'
+              : c.preview,
+            glow: on && c.glow && c.glow !== 'none' ? c.glow : 'none',
+            on: on, cls: on ? 'cos-item is-on' : 'cos-item',
+            state: on ? 'Надето · нажмите, чтобы снять' : bumps ? (s.cosTab === 'back' ? 'Примерить · снимет плащ' : 'Примерить · снимет предмет со спины') : 'Примерить',
+            stateColor: on ? '#86DDA0' : bumps ? '#E8C27A' : '#8A94A3',
+            pick: () => {
+              const next = Object.assign({}, s.cos, { [s.cosTab]: on ? null : c.id });
+              if (bumps) next[s.cosTab === 'back' ? 'cape' : 'back'] = null;
+              this.setState({ cos: next, cosSaved: false });
+            }
+          };
+        });
+      })(),
       cosSummary: (() => {
         const d = this.cosDefs();
-        const names = ['cape', 'hat', 'aura'].map((k) => { const it = d[k].find((c) => c.id === s.cos[k]); return it ? it.name : null; }).filter(Boolean);
+        const names = ['hat', 'face', 'back', 'pet', 'cape', 'aura'].map((k) => { const it = d[k].find((c) => c.id === s.cos[k]); return it ? it.name : null; }).filter(Boolean);
         return names.length ? 'На игроке: ' + names.join(', ') + '. Покрутите модель, чтобы рассмотреть образ.' : 'Ничего не надето — выберите плащ, аксессуар или ауру.';
       })(),
-      cosClear: () => this.setState({ cos: { cape: null, hat: null, aura: null }, cosSaved: false }),
+      cosClear: () => this.setState({ cos: { cape: null, hat: null, face: null, back: null, pet: null, aura: null }, cosSaved: false }),
       cosSave: () => {
-        this.setState({ savedCos: Object.assign({}, s.cos), cosSaved: true });
+        const look = this.cleanLook(s.cos);
+        this.setState({ cos: look, savedCos: look, cosSaved: true });
         this.play('done');
         clearTimeout(this.cosTimer);
         this.cosTimer = setTimeout(() => this.setState({ cosSaved: false }), 1800);
+        this.pushLook(look);
       },
-      cosSaveLabel: s.cosSaved ? 'Сохранено на этом компьютере ✓' : 'Сохранить образ',
+      cosSaveLabel: !s.cosSaved ? 'Сохранить образ'
+        : s.cosSync.state === 'busy' ? 'Отправка на сервер…'
+        : s.cosSync.state === 'synced' ? 'Сохранено и синхронизировано ✓' : 'Сохранено на этом компьютере',
+      cosSyncBadge: { busy: 'Синхронизация…', synced: 'Синхронизировано', error: 'Нет связи с сервером', local: 'Локальный предпросмотр' }[s.cosSync.state] || 'Не на сервере',
+      cosSyncBadgeCls: s.cosSync.state === 'synced' ? 'local-badge is-synced' : 'local-badge',
+      cosSyncNote: {
+        busy: 'Синхронизация с сервером Signal…',
+        synced: 'Синхронизировано с сервером Signal: образ привязан к профилю и загрузится при следующем входе.',
+        empty: 'На сервере Signal образа для этого профиля ещё нет. «Сохранить образ» отправит его.',
+        unclaimed: 'Ник ещё не привязан к серверу Signal. «Сохранить образ» привяжет его к этому компьютеру и отправит образ.',
+        local: 'В браузерном превью образ хранится только на этом компьютере.',
+        error: 'Не удалось связаться с сервером Signal, образ сохранён на этом компьютере.'
+      }[s.cosSync.state] || 'Выбор сохраняется кнопкой ниже.',
+      hasCosSyncErr: s.cosSync.state === 'error' && !!s.cosSync.msg,
+      cosSyncErr: s.cosSync.msg,
 
       openAi: () => this.setState({ aiOpen: true, accMenu: false, verMenu: false, friendsOpen: false }),
       closeAi: () => this.setState({ aiOpen: false }),
@@ -1073,9 +1178,14 @@ class Component extends DCLogic {
       friendMsg: s.friendMsg,
       friendMsgColor: s.friendMsgOk ? '#86DDA0' : '#F2998B',
 
-      parts: this.skinModel(s.slim, 11, true),
-      skinSize: 704,
       stageRef: (el) => { this.stageEl = el; },
+      viewerRef: (el) => {
+        if (!el) return;
+        if (!this.viewer) this.viewer = new SkinViewer({ scale: 11, originY: 290, perspective: 1400 });
+        this.viewer.mount(el);
+        this.syncViewer();
+        this.applyView();
+      },
       openSkin: () => { this.play('open'); this.drag = null; this.setState(Object.assign({ skinModal: true, pendingSkin: '', pendingName: '', pendingSlim: s.slim, skinErr: '', dragOver: false }, closeAll)); },
       closeSkin: () => this.setState({ skinModal: false, pendingSkin: '', skinErr: '' }),
       skinModal: s.skinModal,
@@ -1992,111 +2102,55 @@ class Component extends DCLogic {
     return out;
   }
 
-  boxFaces(x, y, z, W, H, D, colors, pre) {
-    const list = [
-      ['front', W, H, 'translateZ(' + D / 2 + 'px)'],
-      ['back', W, H, 'rotateY(180deg) translateZ(' + D / 2 + 'px)'],
-      ['right', D, H, 'rotateY(-90deg) translateZ(' + W / 2 + 'px)'],
-      ['left', D, H, 'rotateY(90deg) translateZ(' + W / 2 + 'px)'],
-      ['top', W, D, 'rotateX(90deg) translateZ(' + H / 2 + 'px)'],
-      ['bottom', W, D, 'rotateX(-90deg) translateZ(' + H / 2 + 'px)']
-    ];
-    const head = (pre ? pre + ' ' : '') + 'translate3d(' + x + 'px, ' + y + 'px, ' + z + 'px) ';
-    return list.map((f) => ({
-      cls: 'face', w: f[1], h: f[2], l: -f[1] / 2, t: -f[2] / 2, tf: head + f[3],
-      bg: colors[f[0]] || colors.all, clip: 'none', r: '0', sh: 'none'
-    }));
-  }
-
   cosDefs() {
-    const stars = 'radial-gradient(circle at 28% 18%, rgba(255,255,255,0.9) 0 1.5px, rgba(255,255,255,0) 2.5px), radial-gradient(circle at 70% 34%, rgba(255,255,255,0.8) 0 1.5px, rgba(255,255,255,0) 2.5px), radial-gradient(circle at 44% 62%, rgba(255,255,255,0.7) 0 1.5px, rgba(255,255,255,0) 2.5px), radial-gradient(circle at 76% 80%, rgba(255,255,255,0.6) 0 1.5px, rgba(255,255,255,0) 2.5px), ';
     return {
       cape: [
-        { id: 'signal', name: 'Signal', rarity: 'Эпический', outer: 'radial-gradient(circle at 50% 26%, rgba(233,251,239,0.95) 0 10px, rgba(233,251,239,0) 11px), linear-gradient(180deg, #7BE59A 0%, #2E9E50 45%, #124A26 100%)', inner: '#163A24', edge: '#1D5C2E', glow: '0 0 26px rgba(91,208,122,0.45)' },
-        { id: 'obsidian', name: 'Обсидиан', rarity: 'Легендарный', outer: 'linear-gradient(180deg, #C3A0FF 0%, #7C4DFF 40%, #2A1458 100%)', inner: '#1A0F30', edge: '#2A1458', glow: '0 0 30px rgba(157,107,255,0.8)' },
-        { id: 'copper', name: 'Медь', rarity: 'Редкий', outer: 'linear-gradient(180deg, #E8A46A 0%, #B8643A 50%, #4FA58D 100%)', inner: '#3B2418', edge: '#6B3A22', glow: 'none' },
-        { id: 'midnight', name: 'Полночь', rarity: 'Эпический', outer: stars + 'linear-gradient(180deg, #24366E, #0B1230)', inner: '#0A0F22', edge: '#141E44', glow: '0 0 22px rgba(120,150,255,0.45)' },
-        { id: 'ember', name: 'Угли', rarity: 'Редкий', outer: 'linear-gradient(180deg, #FFB35C 0%, #E2552B 50%, #5A1410 100%)', inner: '#2A0C08', edge: '#5A1410', glow: '0 0 24px rgba(255,120,60,0.5)' },
-        { id: 'frost', name: 'Иней', rarity: 'Редкий', outer: 'linear-gradient(180deg, #E8F7FF 0%, #8FD3FF 50%, #2E6FA8 100%)', inner: '#10283F', edge: '#1E4A70', glow: '0 0 22px rgba(143,211,255,0.5)' }
+        { id: 'signal', name: 'Signal', rarity: 'Эпический', icon: 'cape_signal', glow: '0 0 26px rgba(91,208,122,0.45)' },
+        { id: 'ender', name: 'Эндер', rarity: 'Легендарный', icon: 'cape_ender', glow: '0 0 28px rgba(192,76,255,0.55)' },
+        { id: 'obsidian', name: 'Обсидиан', rarity: 'Легендарный', icon: 'cape_obsidian', glow: '0 0 30px rgba(157,107,255,0.8)' },
+        { id: 'midnight', name: 'Полночь', rarity: 'Эпический', icon: 'cape_midnight', glow: '0 0 22px rgba(120,150,255,0.45)' },
+        { id: 'ember', name: 'Угли', rarity: 'Редкий', icon: 'cape_ember', glow: '0 0 24px rgba(255,120,60,0.5)' },
+        { id: 'frost', name: 'Иней', rarity: 'Редкий', icon: 'cape_frost', glow: '0 0 22px rgba(143,211,255,0.5)' },
+        { id: 'copper', name: 'Медь', rarity: 'Редкий', icon: 'cape_copper', glow: 'none' }
       ],
       hat: [
-        { id: 'crown', name: 'Корона', rarity: 'Легендарный', preview: 'radial-gradient(circle at 50% 60%, #E5484D 0 7px, rgba(0,0,0,0) 8px), linear-gradient(135deg, #FFE58A, #E0A93A 55%, #B67A1E)' },
-        { id: 'halo', name: 'Нимб', rarity: 'Эпический', preview: 'radial-gradient(closest-side, rgba(255,224,138,0) 58%, #FFE08A 62%, #FFF4C7 70%, #FFE08A 78%, rgba(255,224,138,0) 84%), #141821' },
-        { id: 'headphones', name: 'Наушники', rarity: 'Редкий', preview: 'radial-gradient(circle at 26% 60%, #5BD07A 0 6px, rgba(0,0,0,0) 7px), radial-gradient(circle at 74% 60%, #5BD07A 0 6px, rgba(0,0,0,0) 7px), linear-gradient(180deg, #3A424E, #1E232B)' },
-        { id: 'cap', name: 'Кепка Signal', rarity: 'Обычный', preview: 'radial-gradient(circle at 50% 50%, #E9FBEF 0 8px, rgba(0,0,0,0) 9px), linear-gradient(180deg, #3FAE5A, #1D5C2E)' }
+        { id: 'crown', name: 'Корона', rarity: 'Легендарный', model: 'acc_crown', icon: 'acc_crown' },
+        { id: 'headphones', name: 'Неоновые наушники', rarity: 'Эпический', model: 'acc_headphones', icon: 'acc_headphones' },
+        { id: 'horns', name: 'Неоновые рожки', rarity: 'Эпический', model: 'acc_horns', icon: 'acc_horns' },
+        { id: 'tophat', name: 'Цилиндр', rarity: 'Редкий', model: 'acc_tophat', icon: 'acc_tophat' },
+        { id: 'rattan', name: 'Соломенная шляпа', rarity: 'Редкий', model: 'imp_rattan_hat', icon: 'imp_rattan_hat' },
+        { id: 'witch', name: 'Шляпа ведьмы', rarity: 'Эпический', model: 'imp_witch_hat', icon: 'imp_witch_hat' },
+        { id: 'star_halo', name: 'Звёздный нимб', rarity: 'Легендарный', model: 'imp_halo', icon: 'imp_halo' },
+        { id: 'devil_horns', name: 'Рожки дьявола', rarity: 'Редкий', model: 'imp_devil_horns', icon: 'imp_devil_horns' }
+      ],
+      face: [
+        { id: 'visor', name: 'Кибер-визор', rarity: 'Эпический', model: 'acc_visor', icon: 'acc_visor' },
+        { id: 'oni', name: 'Маска они', rarity: 'Эпический', model: 'acc_oni', icon: 'acc_oni' },
+        { id: 'tinted', name: 'Тонированные очки', rarity: 'Обычный', model: 'imp_tinted_glasses', icon: 'imp_tinted_glasses' },
+        { id: 'cyber_goggles', name: 'Кибер-гогглы', rarity: 'Эпический', model: 'imp_cyber_goggles', icon: 'imp_cyber_goggles' }
+      ],
+      back: [
+        { id: 'wings', name: 'Неоновые крылья', rarity: 'Легендарный', model: 'acc_wings', icon: 'acc_wings' },
+        { id: 'katana', name: 'Катана', rarity: 'Эпический', model: 'acc_katana', icon: 'acc_katana', noCape: true },
+        { id: 'backpack', name: 'Тактический рюкзак', rarity: 'Редкий', model: 'acc_backpack', icon: 'acc_backpack', noCape: true },
+        { id: 'angel_wings', name: 'Крылья ангела', rarity: 'Легендарный', model: 'imp_angel_wings', icon: 'imp_angel_wings' },
+        { id: 'school_backpack', name: 'Школьный рюкзак', rarity: 'Обычный', model: 'imp_school_backpack', icon: 'imp_school_backpack', noCape: true }
+      ],
+      pet: [
+        { id: 'parrot', name: 'Попугай', rarity: 'Эпический', model: 'pet_parrot', icon: 'pet_parrot' },
+        { id: 'baby_dragon', name: 'Дракончик', rarity: 'Эпический', model: 'imp_baby_dragon', icon: 'imp_baby_dragon' },
+        { id: 'leaf_dragon', name: 'Листовой дракон', rarity: 'Легендарный', model: 'imp_leaf_dragon', icon: 'imp_leaf_dragon' }
       ],
       aura: [
-        { id: 'emerald', name: 'Изумрудные искры', rarity: 'Эпический', preview: 'radial-gradient(circle at 30% 40%, #9BE8AE 0 3px, rgba(0,0,0,0) 4px), radial-gradient(circle at 65% 25%, #5BD07A 0 4px, rgba(0,0,0,0) 5px), radial-gradient(circle at 55% 70%, #2A8040 0 3px, rgba(0,0,0,0) 4px), radial-gradient(circle at 50% 100%, rgba(91,208,122,0.45), #0E1712 70%)' },
-        { id: 'sakura', name: 'Сакура', rarity: 'Редкий', preview: 'radial-gradient(circle at 30% 35%, #FFB7D5 0 5px, rgba(0,0,0,0) 6px), radial-gradient(circle at 70% 60%, #F48FB1 0 4px, rgba(0,0,0,0) 5px), radial-gradient(circle at 50% 100%, rgba(244,143,177,0.4), #1A1016 70%)' },
-        { id: 'soul', name: 'Пламя душ', rarity: 'Легендарный', preview: 'radial-gradient(ellipse at 50% 85%, #B3F0FF 0 6px, #4FC3F7 12px, rgba(79,195,247,0) 30px), #0B1520' },
-        { id: 'snow', name: 'Снегопад', rarity: 'Обычный', preview: 'radial-gradient(circle at 25% 30%, #FFFFFF 0 2px, rgba(0,0,0,0) 3px), radial-gradient(circle at 60% 50%, #FFFFFF 0 3px, rgba(0,0,0,0) 4px), radial-gradient(circle at 80% 20%, #E3F2FD 0 2px, rgba(0,0,0,0) 3px), linear-gradient(180deg, #1B2B42, #0B121C)' }
+        { id: 'flame', name: 'Пламя', rarity: 'Эпический', icon: 'aura_flame' },
+        { id: 'portal', name: 'Портал Края', rarity: 'Легендарный', icon: 'aura_portal' },
+        { id: 'neon', name: 'Неоновые глифы', rarity: 'Эпический', icon: 'aura_neon' },
+        { id: 'soul', name: 'Пламя душ', rarity: 'Легендарный', icon: 'aura_soul' },
+        { id: 'snow', name: 'Морозный вихрь', rarity: 'Редкий', icon: 'aura_snow' },
+        { id: 'emerald', name: 'Изумрудные искры', rarity: 'Редкий', icon: 'aura_emerald' },
+        { id: 'sakura', name: 'Сакура', rarity: 'Редкий', icon: 'aura_sakura' }
       ]
     };
-  }
-
-  capeFaces(id) {
-    const def = this.cosDefs().cape.find((c) => c.id === id);
-    if (!def) return [];
-    const faces = this.boxFaces(0, 88, 0, 110, 176, 10, { back: def.outer, front: def.inner, all: def.edge }, 'translate3d(0px, -66px, -29px) rotateX(-10deg)');
-    faces[1].sh = def.glow;
-    return faces;
-  }
-
-  hatFaces(id) {
-    if (id === 'crown') {
-      const clip = 'polygon(0 100%, 0 35%, 12.5% 0, 25% 35%, 37.5% 0, 50% 35%, 62.5% 0, 75% 35%, 87.5% 0, 100% 35%, 100% 100%)';
-      const gems = ['#E5484D', '#4FA3FF', '#5BD07A', '#B48CFF'];
-      const out = [];
-      for (let k = 0; k < 4; k++) {
-        out.push({ cls: 'face both', w: 96, h: 34, l: -48, t: -17, tf: 'translate3d(0px, -58px, 0px) rotateY(' + (k * 90) + 'deg) translateZ(48px)', bg: 'linear-gradient(180deg, #FFE58A, #E0A93A 60%, #B67A1E)', clip: clip, r: '0', sh: 'none' });
-        out.push({ cls: 'face', w: 10, h: 10, l: -5, t: -5, tf: 'translate3d(0px, -50px, 0px) rotateY(' + (k * 90) + 'deg) translateZ(49px)', bg: gems[k], clip: 'none', r: '50%', sh: '0 0 8px ' + gems[k] });
-      }
-      return out;
-    }
-    if (id === 'halo') {
-      return [{ cls: 'face both', w: 110, h: 110, l: -55, t: -55, tf: 'translate3d(0px, -82px, 0px) rotateX(90deg)', bg: 'radial-gradient(closest-side, rgba(255,224,138,0) 70%, #FFE08A 73%, #FFF4C7 80%, #FFE08A 86%, rgba(255,224,138,0) 90%)', clip: 'none', r: '50%', sh: '0 0 26px rgba(255,224,138,0.7)' }];
-    }
-    if (id === 'headphones') {
-      const led = 'radial-gradient(circle, #5BD07A 0 4px, rgba(91,208,122,0.35) 5px 7px, #2A3038 8px)';
-      return [].concat(
-        this.boxFaces(0, -49, 0, 104, 8, 14, { all: '#252B34', top: '#3A424E' }),
-        this.boxFaces(-50, -32, 0, 4, 28, 8, { all: '#1E232B' }),
-        this.boxFaces(50, -32, 0, 4, 28, 8, { all: '#1E232B' }),
-        this.boxFaces(-50, -4, 0, 12, 30, 28, { all: '#2A3038', right: led }),
-        this.boxFaces(50, -4, 0, 12, 30, 28, { all: '#2A3038', left: led })
-      );
-    }
-    if (id === 'cap') {
-      return [].concat(
-        this.boxFaces(0, -40, 0, 94, 22, 94, { all: '#2A8040', top: '#3FAE5A', front: 'radial-gradient(circle at 50% 55%, #E9FBEF 0 6px, rgba(0,0,0,0) 7px), #2A8040' }),
-        this.boxFaces(0, -30, 64, 94, 5, 34, { all: '#1D5C2E', top: '#24703A' })
-      );
-    }
-    return [];
-  }
-
-  auraParticles(kind) {
-    const P = {
-      emerald: { cls: 'pt-sq', cols: ['#5BD07A', '#9BE8AE', '#2A8040'], s: [5, 9], g: 10 },
-      sakura: { cls: 'pt-petal', cols: ['#FFB7D5', '#F48FB1', '#FFD6E7'], s: [8, 12], g: 4 },
-      soul: { cls: 'pt-flame', cols: ['#7FE3FF', '#4FC3F7', '#B3F0FF'], s: [8, 14], g: 14 },
-      snow: { cls: 'pt-snow', cols: ['#FFFFFF', '#E3F2FD'], s: [4, 8], g: 6 }
-    };
-    const d = P[kind];
-    if (!d) return [];
-    let seed = 7;
-    const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
-    return Array.from({ length: 22 }, (_, i) => ({
-      cls: 'pt ' + d.cls + ' ' + ['dl', 'dr', 'dn'][i % 3],
-      x: Math.round(rnd() * 320 - 160),
-      y: Math.round(300 + rnd() * 220),
-      s: Math.round(d.s[0] + rnd() * (d.s[1] - d.s[0])),
-      c: d.cols[i % d.cols.length],
-      g: d.g,
-      d: (3.6 + rnd() * 3).toFixed(2),
-      dl: (rnd() * 6).toFixed(2),
-      front: i % 2 === 0
-    }));
   }
 
   parsePack(text) {

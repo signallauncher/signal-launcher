@@ -391,6 +391,16 @@ window.SignalBridge = {
     return isTauri ? invoke('list_accounts') : demoMs.accounts.slice();
   },
 
+  // Signal Companion (docs/companion-api.md). profile: { kind: 'ms' | 'offline', id, name }.
+  // Both resolve to null in the browser preview: there is no backend to sign the profile in.
+  async companionLook(profile) {
+    return isTauri ? invoke('companion_look', { profile }) : null;
+  },
+
+  async companionSaveLook(profile, look) {
+    return isTauri ? invoke('companion_save_look', { profile, look }) : null;
+  },
+
   async removeAccount(id) {
     if (isTauri) return invoke('remove_account', { id });
     demoMs.accounts = demoMs.accounts.filter((a) => a.id !== id);

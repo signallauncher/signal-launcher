@@ -151,26 +151,10 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 .shop-art img,.shop-art svg{transition:transform .6s ease}
 .shop-card:hover .shop-art img,.shop-card:hover .shop-art svg{transform:scale(1.05)}
 .shop-price{position:absolute;right:12px;top:12px;height:28px;padding:0 12px;border-radius:999px;display:inline-flex;align-items:center;background:rgba(10,12,16,0.62);border:1px solid rgba(255,255,255,0.18);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;color:#FFFFFF}
-.face.both{backface-visibility:visible;-webkit-backface-visibility:visible}
-@keyframes capeSway{0%,100%{transform:rotateX(0deg)}50%{transform:rotateX(-6deg)}}
-.cape-sway{animation:capeSway 3.6s ease-in-out infinite}
-@keyframes haloBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-.halo-bob{animation:haloBob 3s ease-in-out infinite}
-.aura{position:absolute;left:50%;top:0;width:0;height:100%;pointer-events:none}
-.pt{position:absolute;opacity:0;animation-name:ptRise;animation-timing-function:ease-out;animation-iteration-count:infinite}
-.pt.dl{animation-name:ptRiseL}
-.pt.dr{animation-name:ptRiseR}
-@keyframes ptRise{0%{transform:translate3d(0,0,0) rotate(0deg);opacity:0}15%{opacity:1}80%{opacity:.85}100%{transform:translate3d(0,-230px,0) rotate(160deg);opacity:0}}
-@keyframes ptRiseL{0%{transform:translate3d(0,0,0) rotate(0deg);opacity:0}15%{opacity:1}80%{opacity:.85}100%{transform:translate3d(-40px,-230px,0) rotate(-140deg);opacity:0}}
-@keyframes ptRiseR{0%{transform:translate3d(0,0,0) rotate(0deg);opacity:0}15%{opacity:1}80%{opacity:.85}100%{transform:translate3d(40px,-230px,0) rotate(200deg);opacity:0}}
-.pt-sq{border-radius:2px}
-.pt-petal{border-radius:70% 0 70% 0}
-.pt-flame{border-radius:50% 50% 50% 50%/60% 60% 40% 40%;filter:blur(1px)}
-.pt-snow{border-radius:50%}
 .cos-item{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);cursor:pointer;text-align:left;color:#ECEFF3;transition:background .2s,border-color .2s,box-shadow .2s,transform .2s}
 .cos-item:hover{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.18);transform:translateY(-1px)}
 .cos-item.is-on{border-color:rgba(91,208,122,0.55);background:rgba(91,208,122,0.08);box-shadow:0 0 0 3px rgba(91,208,122,0.12)}
-.cos-prev{display:block;height:86px;border-radius:10px;border:1px solid rgba(255,255,255,0.08)}
+.cos-prev{display:block;height:112px;border-radius:10px;border:1px solid rgba(255,255,255,0.08)}
 .ai-result{display:flex;flex-direction:column;gap:14px;padding:18px;border-radius:14px;background:rgba(0,0,0,0.24);border:1px solid rgba(255,255,255,0.07);animation:glassIn .4s cubic-bezier(.2,.8,.2,1)}
 .tagchip{height:26px;padding:0 10px;border-radius:8px;display:inline-flex;align-items:center;font-size:12px;font-weight:600;color:#C9D0DA;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12)}
 .skel{display:block;height:14px;border-radius:7px;background:linear-gradient(90deg,rgba(255,255,255,0.05),rgba(255,255,255,0.13),rgba(255,255,255,0.05));background-size:200% 100%;animation:shimmer 1.2s linear infinite}
@@ -454,13 +438,6 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 <div class="rise" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
 <div style="position: relative; flex: 1 1 440px; min-width: 0">
 <div ref="{{stageRef}}" class="stage" onPointerDown="{{dragStart}}" onPointerMove="{{dragMove}}" onPointerUp="{{dragEnd}}" onPointerCancel="{{dragEnd}}" onDoubleClick="{{openSkin}}" aria-label="3D-модель игрока" style="position: relative; width: 100%; height: 620px; perspective: 1400px; cursor: grab; touch-action: none; user-select: none">
-<sc-if value="{{hasAura}}" hint-placeholder-val="{{false}}">
-<div class="aura" aria-hidden="true">
-<sc-for list="{{auraBack}}" as="pt" hint-placeholder-count="11">
-<span class="{{pt.cls}}" style="left: {{pt.x}}px; top: {{pt.y}}px; width: {{pt.s}}px; height: {{pt.s}}px; background: {{pt.c}}; box-shadow: 0 0 {{pt.g}}px {{pt.c}}; animation-duration: {{pt.d}}s; animation-delay: {{pt.dl}}s"></span>
-</sc-for>
-</div>
-</sc-if>
 <div ref="{{modelRef}}" class="p3" style="top: 290px; transform: rotateX(-6deg) rotateY(0deg)">
 <div class="p3" aria-hidden="true" style="transform: translate3d(0px, 199px, 0px)">
 <div class="ped3-glow"></div>
@@ -477,33 +454,8 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 <svg class="ped3-logo" width="30" height="30" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 3L30 10L17 17L4 10Z" fill="#9BE8AE"></path><path d="M4 10L17 17V31L4 24Z" fill="#5BD07A"></path><path d="M30 10L17 17V31L30 24Z" fill="#2A8040"></path></svg>
 </div>
 </div>
-<sc-for list="{{parts}}" as="p" hint-placeholder-count="6">
-<div class="p3" style="transform: translate3d({{p.x}}px, {{p.y}}px, 0px)">
-<div data-part="{{p.part}}" class="p3 {{p.anim}}" style="transform-origin: 0px {{p.pivot}}px 0px">
-<sc-for list="{{p.faces}}" as="f" hint-placeholder-count="6">
-<div class="face skinface" style="left: {{f.l}}px; top: {{f.t}}px; width: {{f.w}}px; height: {{f.h}}px; background-size: {{skinSize}}px {{skinSize}}px; background-position: {{f.bp}}; transform: {{f.tf}}; filter: brightness({{f.light}})"></div>
-</sc-for>
-<div class="p3" style="transform: scale3d({{p.ovs}})">
-<sc-for list="{{p.ov}}" as="f" hint-placeholder-count="6">
-<div class="face skinface" style="left: {{f.l}}px; top: {{f.t}}px; width: {{f.w}}px; height: {{f.h}}px; background-size: {{skinSize}}px {{skinSize}}px; background-position: {{f.bp}}; transform: {{f.tf}}; filter: brightness({{f.light}})"></div>
-</sc-for>
 </div>
-<div class="p3 {{p.accAnim}}" style="transform-origin: {{p.accOrigin}}">
-<sc-for list="{{p.acc}}" as="f" hint-placeholder-count="0">
-<div class="{{f.cls}}" style="left: {{f.l}}px; top: {{f.t}}px; width: {{f.w}}px; height: {{f.h}}px; transform: {{f.tf}}; background: {{f.bg}}; clip-path: {{f.clip}}; border-radius: {{f.r}}; box-shadow: {{f.sh}}"></div>
-</sc-for>
-</div>
-</div>
-</div>
-</sc-for>
-</div>
-<sc-if value="{{hasAura}}" hint-placeholder-val="{{false}}">
-<div class="aura" aria-hidden="true">
-<sc-for list="{{auraFront}}" as="pt" hint-placeholder-count="11">
-<span class="{{pt.cls}}" style="left: {{pt.x}}px; top: {{pt.y}}px; width: {{pt.s}}px; height: {{pt.s}}px; background: {{pt.c}}; box-shadow: 0 0 {{pt.g}}px {{pt.c}}; animation-duration: {{pt.d}}s; animation-delay: {{pt.dl}}s"></span>
-</sc-for>
-</div>
-</sc-if>
+<div ref="{{viewerRef}}" aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none"></div>
 </div>
 </div>
 
@@ -512,13 +464,17 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 <div class="scard-h">
 <span class="scard-ico" style="background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(91,208,122,0.18)); color: #D7C8FF; border-color: rgba(157,107,255,0.3)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"></path></svg></span>
 <span class="scard-t" style="flex: 1"><h2 id="h-cos">Гардероб косметики</h2><span>Нажмите на предмет — он сразу появится на игроке</span></span>
-<span class="local-badge">Локальный предпросмотр</span>
+<span class="{{cosSyncBadgeCls}}">{{cosSyncBadge}}</span>
 </div>
 <div class="snote">
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
-<span>Образ виден только в лаунчере на этом компьютере: в игре и другим игрокам его не видно. Выбор сохраняется кнопкой ниже.</span>
+<span style="display: flex; flex-direction: column; gap: 4px"><span>{{cosSyncNote}}</span><sc-if value="{{hasCosSyncErr}}" hint-placeholder-val="{{false}}"><span style="color: #F2998B">{{cosSyncErr}}</span></sc-if></span>
 </div>
-<div role="tablist" aria-label="Категории" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 13px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08)">
+<div style="display: flex; gap: 10px">
+<button class="ghost" data-sfx="close" onClick="{{cosClear}}" style="flex: 1">Снять всё</button>
+<button class="accent" onClick="{{cosSave}}" style="background: {{accent}}; flex: 1">{{cosSaveLabel}}</button>
+</div>
+<div role="tablist" aria-label="Категории" style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 13px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08)">
 <sc-for list="{{cosTabs}}" as="ct" hint-placeholder-count="3">
 <button class="seg {{ct.cls}}" role="tab" aria-selected="{{ct.on}}" onClick="{{ct.pick}}">{{ct.label}}</button>
 </sc-for>
@@ -539,10 +495,6 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 <div class="snote">
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
 <span>{{cosSummary}}</span>
-</div>
-<div style="display: flex; gap: 10px">
-<button class="ghost" data-sfx="close" onClick="{{cosClear}}" style="flex: 1">Снять всё</button>
-<button class="accent" onClick="{{cosSave}}" style="background: {{accent}}; flex: 1">{{cosSaveLabel}}</button>
 </div>
 </section>
 </sc-if>

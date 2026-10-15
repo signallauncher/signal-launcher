@@ -1,4 +1,5 @@
 mod auth;
+mod companion;
 mod console;
 mod curseforge;
 mod discord;
@@ -302,6 +303,18 @@ async fn ms_login_finish(app: tauri::AppHandle, state: tauri::State<'_, auth::Lo
 #[tauri::command]
 fn ms_login_cancel(state: tauri::State<'_, auth::LoginState>) {
     auth::cancel(&state);
+}
+
+/// Signal Companion: the selected profile's look on the server (signs the profile in when needed).
+#[tauri::command]
+async fn companion_look(app: tauri::AppHandle, profile: companion::ProfileRef) -> Result<serde_json::Value, String> {
+    companion::look(&app, profile).await
+}
+
+/// Signal Companion: saves the look for the selected profile.
+#[tauri::command]
+async fn companion_save_look(app: tauri::AppHandle, profile: companion::ProfileRef, look: serde_json::Value) -> Result<serde_json::Value, String> {
+    companion::save_look(&app, profile, look).await
 }
 
 #[tauri::command]
@@ -655,6 +668,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             launch_minecraft,
+            companion_look,
+            companion_save_look,
             generate_ai_modpack,
             open_folder,
             install_mods,

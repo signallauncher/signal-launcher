@@ -548,12 +548,12 @@ fn save(app: &AppHandle, accounts: &[StoredAccount]) -> Result<(), String> {
 }
 
 #[cfg(windows)]
-fn protect(data: &[u8]) -> Option<Vec<u8>> {
+pub(crate) fn protect(data: &[u8]) -> Option<Vec<u8>> {
     dpapi(data, true)
 }
 
 #[cfg(windows)]
-fn unprotect(data: &[u8]) -> Option<Vec<u8>> {
+pub(crate) fn unprotect(data: &[u8]) -> Option<Vec<u8>> {
     dpapi(data, false)
 }
 
@@ -581,11 +581,11 @@ fn dpapi(data: &[u8], encrypt: bool) -> Option<Vec<u8>> {
 }
 
 #[cfg(not(windows))]
-fn protect(data: &[u8]) -> Option<Vec<u8>> {
+pub(crate) fn protect(data: &[u8]) -> Option<Vec<u8>> {
     Some(data.to_vec())
 }
 
 #[cfg(not(windows))]
-fn unprotect(data: &[u8]) -> Option<Vec<u8>> {
+pub(crate) fn unprotect(data: &[u8]) -> Option<Vec<u8>> {
     Some(data.to_vec())
 }
