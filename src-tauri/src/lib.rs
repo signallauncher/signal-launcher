@@ -1,5 +1,6 @@
 mod auth;
 mod companion;
+mod companion_mod;
 mod console;
 mod curseforge;
 mod discord;

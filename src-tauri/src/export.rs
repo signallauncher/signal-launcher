@@ -77,6 +77,10 @@ pub async fn preview(instance_id: &str) -> Result<ExportPreview, String> {
                 if lower == "resourcepacks" && child == crate::skinpack::PACK {
                     continue;
                 }
+                // Neither is Signal Companion: the launcher installs the right build on every start.
+                if lower == "mods" && child.to_lowercase().starts_with(crate::companion_mod::JAR_NAME) {
+                    continue;
+                }
                 let child_lower = child.to_lowercase();
                 let enabled = !child_lower.ends_with(".disabled");
                 entries.push(ExportEntry {

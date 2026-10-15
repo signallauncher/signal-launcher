@@ -340,6 +340,16 @@ pub async fn launch(app: AppHandle, opts: LaunchOptions) -> Result<LaunchOutcome
     }
     progress.step("client", "client.jar готов", 18.0);
 
+    // Signal Companion: the mod jar built for this version into mods/ (companion_mod.rs); never blocks the launch.
+    let mut mod_note = String::new();
+    if let (Loader::Fabric, Some(mc)) = parse_label(&label) {
+        progress.step("companion", "Signal Companion…", 19.0);
+        match crate::companion_mod::install(&client, &instance, &mc).await {
+            Ok(target) => println!("[signal] companion mod for {mc}: {}", target.as_deref().unwrap_or("none")),
+            Err(e) => mod_note = format!(" Signal Companion не обновлён: {e}."),
+        }
+    }
+
     // The launcher's skin in an offline game (skinpack.rs); a failure never blocks the launch.
     let mut skin_note = String::new();
     match (&opts.auth, &opts.skin) {
@@ -508,7 +518,7 @@ pub async fn launch(app: AppHandle, opts: LaunchOptions) -> Result<LaunchOutcome
         mode: "started".into(),
         title: "Игра запускается!".into(),
         message: format!(
-            "{} · {} {username}. Журнал: {}.{backup_note}{skin_note}",
+            "{} · {} {username}. Журнал: {}.{backup_note}{skin_note}{mod_note}",
             profile.id,
             if opts.auth.is_some() { "лицензия," } else { "офлайн," },
             log_path.display()
