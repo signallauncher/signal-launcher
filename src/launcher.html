@@ -61,10 +61,10 @@ body{margin:0;background:#07090C}
 .ui-root:not(.ui-editing).ui-hide-title [data-ui=title],.ui-root:not(.ui-editing).ui-hide-sound [data-ui=sound],
 .ui-root:not(.ui-editing).ui-hide-notifications [data-ui=notifications],.ui-root:not(.ui-editing).ui-hide-account [data-ui=account],
 .ui-root:not(.ui-editing).ui-hide-stage [data-ui=stage],.ui-root:not(.ui-editing).ui-hide-version [data-ui=version],
-.ui-root:not(.ui-editing).ui-hide-console [data-ui=console],.ui-root:not(.ui-editing).ui-hide-badges .nbadge{display:none!important}
+.ui-root:not(.ui-editing).ui-hide-console [data-ui=console],.ui-root:not(.ui-editing).ui-hide-friends [data-ui=friends],.ui-root:not(.ui-editing).ui-hide-badges .nbadge{display:none!important}
 .ui-editing.ui-hide-title [data-ui=title],.ui-editing.ui-hide-sound [data-ui=sound],.ui-editing.ui-hide-notifications [data-ui=notifications],
 .ui-editing.ui-hide-account [data-ui=account],.ui-editing.ui-hide-stage [data-ui=stage],.ui-editing.ui-hide-version [data-ui=version],
-.ui-editing.ui-hide-console [data-ui=console]{opacity:.32;filter:grayscale(1)}
+.ui-editing.ui-hide-console [data-ui=console],.ui-editing.ui-hide-friends [data-ui=friends]{opacity:.32;filter:grayscale(1)}
 /* dragged blocks leave the layout and stay where they were put (x, y in % of the window) */
 .ui-free-sidebar [data-ui=sidebar],.ui-free-title [data-ui=title],.ui-free-sysIcons [data-ui=sysIcons],.ui-free-account [data-ui=account],
 .ui-free-stage [data-ui=stage],.ui-free-launch [data-ui=launch]{position:fixed!important;right:auto!important;bottom:auto!important;margin:0!important;z-index:45}
@@ -187,6 +187,26 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 .glass-pop{animation:glassIn .36s cubic-bezier(.2,.8,.2,1)}
 .frow{display:flex;align-items:center;gap:12px;padding:8px;border-radius:12px;transition:background .15s}
 .frow:hover{background:rgba(255,255,255,0.05)}
+/* friends drawer (right side, over the page) */
+.fr-drawer{position:absolute;z-index:45;top:56px;right:16px;bottom:16px;width:380px;max-width:calc(100vw - 32px);display:flex;flex-direction:column;gap:12px;padding:14px;border-radius:22px;background:rgba(15,20,27,0.96);border:1px solid rgba(255,255,255,0.1);box-shadow:0 28px 70px -18px rgba(0,0,0,0.85);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.fr-head{display:flex;align-items:flex-start;gap:10px;padding:2px 2px 0 6px}
+.fr-link{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:#A3ADBB;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr-link-dot{flex:none;width:8px;height:8px;border-radius:50%}
+.fr-add{display:flex;flex-direction:column;gap:7px;padding:12px;border-radius:16px;background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07)}
+.fr-body{flex:1;min-height:0;display:flex;flex-direction:column;gap:2px;margin:0 -4px;padding:0 4px}
+.fr-sec{padding:12px 8px 6px;font-size:11px;font-weight:600;color:#8A94A3;letter-spacing:.08em;text-transform:uppercase}
+.fr-note{margin:4px 2px;padding:12px 14px;border-radius:14px;font-size:13px;line-height:1.5;color:#A3ADBB;background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07)}
+.fr-err{display:flex;align-items:center;gap:10px;color:#F2998B;background:rgba(242,153,139,0.07);border-color:rgba(242,153,139,0.25)}
+.fr-face{display:block;flex:none;width:32px;height:32px;border-radius:8px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,0.1)}
+.fr-dot{position:absolute;right:-3px;bottom:-3px;width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 3px #0F141B}
+.fr-who{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.fr-name{display:inline-flex;align-items:center;gap:7px;font-weight:600;font-size:14px;color:#ECEFF3}
+.fr-text{font-size:12px;color:#8A94A3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr-off{height:16px;padding:0 5px;border-radius:4px;display:inline-flex;align-items:center;background:rgba(224,164,58,0.14);color:#F0B95A;font-size:9px;font-weight:700;letter-spacing:.06em}
+.fr-req{background:rgba(91,208,122,0.06)}
+.fr-badge{position:absolute;top:9px;right:8px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:#2A8040;color:#FFFFFF;font-size:11px;font-weight:700;box-shadow:0 0 0 2px #10151C}
+.fr-badge.is-req{background:#D9822B}
+.fr-spin{flex:none;width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,0.15);border-top-color:#5BD07A;animation:spin .8s linear infinite}
 .pick{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:6px;min-height:44px;padding:10px;border-radius:14px;border:1px solid rgba(255,255,255,0.09);background:rgba(255,255,255,0.04);color:#ECEFF3;cursor:pointer;text-align:center;font-size:13px;font-weight:500;transition:background .2s,border-color .2s,box-shadow .2s}
 .pick:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.2)}
 .pick.is-active{border-color:rgba(91,208,122,0.6);background:rgba(91,208,122,0.1);box-shadow:0 0 0 3px rgba(91,208,122,0.12)}
@@ -324,6 +344,105 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 <button tabindex="-1" data-sfx="close" aria-label="Закрыть меню" onClick="{{closeMenus}}" style="position: absolute; inset: 0; z-index: 30; background: transparent; border: 0; cursor: default"></button>
 </sc-if>
 
+<sc-if value="{{friendsOpen}}" hint-placeholder-val="{{false}}">
+<aside class="pop fr-drawer" role="dialog" aria-label="Друзья">
+<div class="fr-head">
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+<span style="font-family: 'Unbounded', sans-serif; font-weight: 600; font-size: 17px">Друзья</span>
+<span class="fr-link" title="{{fr.linkTitle}}"><span class="fr-link-dot" style="background: {{fr.linkColor}}"></span>{{fr.linkText}}<sc-if value="{{fr.myName}}" hint-placeholder-val="{{true}}"> · {{fr.myName}}</sc-if></span>
+</div>
+<button class="ghost icon-btn" aria-label="Закрыть" data-sfx="close" onClick="{{closeFriends}}" style="min-height: 38px; width: 38px; border-radius: 11px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<sc-if value="{{fr.noProfile}}" hint-placeholder-val="{{false}}">
+<div class="fr-note">Друзья привязаны к нику. У офлайн-аккаунта «Player» его нет: добавьте аккаунт со своим ником или войдите через Microsoft.</div>
+</sc-if>
+
+<sc-if value="{{fr.myName}}" hint-placeholder-val="{{true}}">
+<div class="fr-add">
+<label for="fnick" style="font-size: 12px; color: #A3ADBB">Добавить по нику</label>
+<div style="display: flex; gap: 8px">
+<input id="fnick" class="field" value="{{nickFriend}}" onChange="{{onNickFriend}}" onKeyDown="{{onNickFriendKey}}" placeholder="Ник игрока" spellcheck="false" autoComplete="off" maxLength="16" style="min-height: 40px">
+<button class="accent" disabled="{{fr.adding}}" onClick="{{addByNick}}" style="background: {{accent}}; flex: none; min-height: 40px; padding: 0 14px; font-size: 13px">{{fr.addLabel}}</button>
+</div>
+<sc-if value="{{hasFriendMsg}}" hint-placeholder-val="{{false}}"><span style="font-size: 12px; color: {{friendMsgColor}}">{{friendMsg}}</span></sc-if>
+</div>
+</sc-if>
+
+<div class="fr-body scroll-y">
+<sc-if value="{{fr.unclaimed}}" hint-placeholder-val="{{false}}">
+<div class="fr-note">Ник «{{fr.myName}}» ещё не заходил на сервер Signal. Первая заявка закрепит его за этим компьютером, и друзья увидят вас в сети.</div>
+</sc-if>
+<sc-if value="{{fr.loading}}" hint-placeholder-val="{{false}}">
+<div class="fr-note" style="display: flex; align-items: center; gap: 10px"><span class="fr-spin"></span>Загружаем друзей…</div>
+</sc-if>
+<sc-if value="{{fr.hasErr}}" hint-placeholder-val="{{false}}">
+<div class="fr-note fr-err"><span style="flex: 1">{{fr.err}}</span><button class="ghost" onClick="{{fr.retry}}" style="min-height: 34px; font-size: 13px">Повторить</button></div>
+</sc-if>
+<sc-if value="{{fr.empty}}" hint-placeholder-val="{{false}}">
+<div class="fr-note">Пока никого. Добавьте друга по нику: он увидит заявку в своём Signal Launcher.</div>
+</sc-if>
+
+<sc-if value="{{fr.hasIncoming}}" hint-placeholder-val="{{false}}">
+<div class="fr-sec">Заявки · {{fr.incomingCount}}</div>
+<sc-for list="{{fr.incoming}}" as="f" hint-placeholder-count="1">
+<div class="frow fr-req">
+<span class="fr-face"><span style="display: block; width: 4px; height: 4px; background: {{f.bg}}; box-shadow: {{f.sh}}"></span></span>
+<span class="fr-who"><span class="fr-name">{{f.name}}<sc-if value="{{f.isOffline}}" hint-placeholder-val="{{false}}"><span class="fr-off">OFFLINE</span></sc-if></span><span class="fr-text">хочет дружить · {{f.when}}</span></span>
+<button class="ghost icon-btn" aria-label="Принять заявку {{f.name}}" title="Принять" disabled="{{f.busy}}" onClick="{{f.accept}}" style="min-height: 34px; width: 34px; border-radius: 10px; color: #86DDA0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></button>
+<button class="ghost icon-btn" aria-label="Отклонить заявку {{f.name}}" title="Отклонить" data-sfx="close" disabled="{{f.busy}}" onClick="{{f.decline}}" style="min-height: 34px; width: 34px; border-radius: 10px; color: #F2998B"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+</sc-for>
+</sc-if>
+
+<sc-if value="{{fr.hasOnline}}" hint-placeholder-val="{{true}}">
+<div class="fr-sec">В сети · {{fr.onlineCount}}</div>
+<sc-for list="{{fr.online}}" as="f" hint-placeholder-count="3">
+<div class="frow acc-row">
+<span style="position: relative; flex: none">
+<span class="fr-face"><span style="display: block; width: 4px; height: 4px; background: {{f.bg}}; box-shadow: {{f.sh}}"></span></span>
+<span class="fr-dot" style="background: {{f.dot}}"></span>
+</span>
+<span class="fr-who"><span class="fr-name">{{f.name}}<sc-if value="{{f.isOffline}}" hint-placeholder-val="{{false}}"><span class="fr-off">OFFLINE</span></sc-if></span><span class="fr-text" style="color: {{f.textColor}}">{{f.detail}}</span></span>
+<button class="{{f.delCls}}" aria-label="Удалить {{f.name}} из друзей" title="Удалить из друзей" disabled="{{f.busy}}" onClick="{{f.del}}">
+<sc-if value="{{f.delIdle}}" hint-placeholder-val="{{true}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></sc-if>
+<sc-if value="{{f.delConfirm}}" hint-placeholder-val="{{false}}"><span>Удалить?</span></sc-if>
+</button>
+</div>
+</sc-for>
+</sc-if>
+
+<sc-if value="{{fr.hasOffline}}" hint-placeholder-val="{{true}}">
+<div class="fr-sec">Не в сети · {{fr.offlineCount}}</div>
+<sc-for list="{{fr.offline}}" as="f" hint-placeholder-count="2">
+<div class="frow acc-row">
+<span style="position: relative; flex: none">
+<span class="fr-face" style="opacity: {{f.fade}}"><span style="display: block; width: 4px; height: 4px; background: {{f.bg}}; box-shadow: {{f.sh}}"></span></span>
+<span class="fr-dot" style="background: {{f.dot}}"></span>
+</span>
+<span class="fr-who"><span class="fr-name" style="color: #A3ADBB">{{f.name}}<sc-if value="{{f.isOffline}}" hint-placeholder-val="{{false}}"><span class="fr-off">OFFLINE</span></sc-if></span><span class="fr-text" style="color: {{f.textColor}}">{{f.detail}}</span></span>
+<button class="{{f.delCls}}" aria-label="Удалить {{f.name}} из друзей" title="Удалить из друзей" disabled="{{f.busy}}" onClick="{{f.del}}">
+<sc-if value="{{f.delIdle}}" hint-placeholder-val="{{true}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></sc-if>
+<sc-if value="{{f.delConfirm}}" hint-placeholder-val="{{false}}"><span>Удалить?</span></sc-if>
+</button>
+</div>
+</sc-for>
+</sc-if>
+
+<sc-if value="{{fr.hasOutgoing}}" hint-placeholder-val="{{false}}">
+<div class="fr-sec">Отправленные · {{fr.outgoingCount}}</div>
+<sc-for list="{{fr.outgoing}}" as="f" hint-placeholder-count="1">
+<div class="frow acc-row">
+<span class="fr-face" style="opacity: 0.7"><span style="display: block; width: 4px; height: 4px; background: {{f.bg}}; box-shadow: {{f.sh}}"></span></span>
+<span class="fr-who"><span class="fr-name" style="color: #C9D0DA">{{f.name}}</span><span class="fr-text" style="color: #F0B95A">ждёт ответа · {{f.when}}</span></span>
+<button class="acc-del" aria-label="Отменить заявку {{f.name}}" title="Отменить заявку" data-sfx="close" disabled="{{f.busy}}" onClick="{{f.cancel}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+</sc-for>
+</sc-if>
+</div>
+</aside>
+</sc-if>
+
 <div class="titlebar" data-tauri-drag-region="true">
 <span class="tb-title" data-tauri-drag-region="true"><svg width="18" height="18" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 3L30 10L17 17L4 10Z" fill="#5BD07A"></path><path d="M4 10L17 17V31L4 24Z" fill="#2A8040"></path><path d="M30 10L17 17V31L30 24Z" fill="#1D5C2E"></path></svg>Signal Launcher</span>
 <span class="tb-ctrls">
@@ -372,67 +491,11 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 <sc-if value="{{hasPageSub}}" hint-placeholder-val="{{false}}"><p style="margin: 6px 0 0; color: #8A94A3; font-size: 13px">{{pageSub}}</p></sc-if>
 </div>
 <div class="hd-ctrls" style="display: flex; align-items: center; gap: 10px">
-<div style="position: relative">
-
-<sc-if value="{{friendsOpen}}" hint-placeholder-val="{{false}}">
-<div class="pop" role="dialog" aria-label="Друзья" style="position: absolute; top: calc(100% + 8px); right: 0; width: 400px; max-width: calc(100vw - 32px); background: rgba(17,22,29,0.97); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 12px; box-shadow: 0 28px 60px -16px rgba(0,0,0,0.85); display: flex; flex-direction: column; gap: 12px">
-<div role="tablist" aria-label="Друзья" style="display: flex; gap: 4px; padding: 4px; border-radius: 13px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08)">
-<button class="seg {{fTabListCls}}" role="tab" aria-selected="{{fTabList}}" onClick="{{setFTabList}}" style="flex: 1">Друзья · {{friendCount}}</button>
-<button class="seg {{fTabAddCls}}" role="tab" aria-selected="{{fTabAdd}}" onClick="{{setFTabAdd}}" style="flex: 1">Добавить друга</button>
-</div>
-
-<sc-if value="{{fTabList}}" hint-placeholder-val="{{true}}">
-<div style="display: flex; flex-direction: column; gap: 2px; max-height: 380px; overflow-y: auto">
-<sc-for list="{{friendsView}}" as="f" hint-placeholder-count="5">
-<div class="frow">
-<span style="position: relative; flex: none; width: 32px; height: 32px">
-<span style="display: block; width: 32px; height: 32px; border-radius: 8px; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,255,255,0.1); opacity: {{f.fade}}"><span style="display: block; width: 4px; height: 4px; background: {{f.bg}}; box-shadow: {{f.sh}}"></span></span>
-<span style="position: absolute; right: -3px; bottom: -3px; width: 12px; height: 12px; border-radius: 50%; background: {{f.dot}}; box-shadow: 0 0 0 3px #11161D"></span>
-</span>
-<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
-<span style="font-weight: 600; font-size: 14px; color: #ECEFF3">{{f.name}}</span>
-<span style="font-size: 12px; color: {{f.textColor}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{f.detail}}</span>
-</span>
-<sc-if value="{{f.canJoin}}" hint-placeholder-val="{{false}}"><button class="ghost" style="min-height: 36px; padding: 0 12px; font-size: 13px">Присоединиться</button></sc-if>
-<sc-if value="{{f.canInvite}}" hint-placeholder-val="{{false}}"><button class="ghost" style="min-height: 36px; padding: 0 12px; font-size: 13px">Пригласить</button></sc-if>
-<sc-if value="{{f.isPending}}" hint-placeholder-val="{{false}}"><button class="ghost icon-btn" aria-label="Отменить заявку" data-sfx="close" onClick="{{f.cancel}}" style="min-height: 36px; width: 36px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></sc-if>
-</div>
-</sc-for>
-</div>
-</sc-if>
-
-<sc-if value="{{fTabAdd}}" hint-placeholder-val="{{false}}">
-<div style="display: flex; flex-direction: column; gap: 14px; padding: 4px">
-<div style="border-radius: 14px; padding: 14px; background: rgba(91,208,122,0.07); border: 1px solid rgba(91,208,122,0.22); display: flex; align-items: center; gap: 12px">
-<span style="flex: 1; display: flex; flex-direction: column; gap: 4px">
-<span style="font-size: 12px; color: #A3ADBB">Ваш код друга</span>
-<span style="font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 500; letter-spacing: 0.06em; color: #ECEFF3">{{myCode}}</span>
-</span>
-<button class="ghost" onClick="{{copyCode}}" style="min-height: 40px; font-size: 13px">{{copyLabel}}</button>
-</div>
-<div style="display: flex; flex-direction: column; gap: 8px">
-<label for="fcode" style="font-size: 13px; color: #C9D0DA">Добавить по коду</label>
-<div style="display: flex; gap: 8px">
-<input id="fcode" class="field" value="{{codeInput}}" onChange="{{onCodeInput}}" placeholder="SGNL-XXXX-XXXX" spellcheck="false" autoComplete="off" style="font-family: 'JetBrains Mono', monospace; text-transform: uppercase">
-<button class="accent" onClick="{{addByCode}}" style="background: {{accent}}; flex: none">Добавить</button>
-</div>
-</div>
-<div style="display: flex; flex-direction: column; gap: 8px">
-<label for="fnick" style="font-size: 13px; color: #C9D0DA">Добавить по никнейму</label>
-<div style="display: flex; gap: 8px">
-<input id="fnick" class="field" value="{{nickFriend}}" onChange="{{onNickFriend}}" placeholder="Никнейм игрока" spellcheck="false" autoComplete="off" maxLength="16">
-<button class="accent" onClick="{{addByNick}}" style="background: {{accent}}; flex: none">Отправить</button>
-</div>
-</div>
-<sc-if value="{{hasFriendMsg}}" hint-placeholder-val="{{false}}">
-<span style="font-size: 13px; color: {{friendMsgColor}}">{{friendMsg}}</span>
-</sc-if>
-</div>
-</sc-if>
-</div>
-</sc-if>
-</div>
 <div data-ui="sysIcons" style="display: flex; align-items: center; gap: 10px">
+<button class="ghost icon-btn" data-ui="friends" aria-label="{{fr.buttonLabel}}" aria-haspopup="dialog" aria-expanded="{{friendsOpen}}" data-sfx="open" onClick="{{toggleFriends}}" style="height: 56px; width: 56px; border-radius: 16px; position: relative">
+<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"></path><path d="M15.5 4.8a3.3 3.3 0 0 1 0 6.4M18 14.8c1.9.7 3.1 2.4 3.5 5.2"></path></svg>
+<sc-if value="{{fr.hasBadge}}" hint-placeholder-val="{{false}}"><span class="{{fr.badgeCls}}">{{fr.badge}}</span></sc-if>
+</button>
 <button class="ghost icon-btn" data-ui="sound" aria-label="Звуки интерфейса" aria-pressed="{{soundOn}}" data-sfx="toggle" onClick="{{toggleSound}}" style="height: 56px; width: 56px; border-radius: 16px">
 <sc-if value="{{soundOn}}" hint-placeholder-val="{{true}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"></path><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"></path></svg></sc-if>
 <sc-if value="{{soundOff}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"></path><path d="M16 9.5l5 5M21 9.5l-5 5"></path></svg></sc-if>

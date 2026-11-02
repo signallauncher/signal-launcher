@@ -91,6 +91,44 @@ const demoInstances = {
 };
 const fmtMinutes = (sec) => (sec < 60 ? 'меньше минуты' : sec < 3600 ? Math.round(sec / 60) + ' мин' : decimal(sec / 3600) + ' ч');
 const gameExitHandlers = [];
+const presenceHandlers = [];
+
+// Browser preview: a few friends in every state, requests answered locally.
+const demoFriends = (() => {
+  const ago = (min) => new Date(Date.now() - min * 60000).toISOString();
+  const p = (name, kind) => ({ uuid: 'demo-' + name.toLowerCase(), name, kind: kind || 'mojang' });
+  let friends = [
+    Object.assign(p('Kira_Redstone'), { status: 'playing_singleplayer', detail: 'Fabric 1.21.1', since: ago(34) }),
+    Object.assign(p('Mira_Snow'), { status: 'hosting_p2p', detail: 'Release 1.21.9', since: ago(8) }),
+    Object.assign(p('Steve_Builds', 'offline'), { status: 'in_menu', detail: null, since: ago(3) }),
+    Object.assign(p('OldMiner'), { status: 'offline', detail: null, since: null })
+  ];
+  let incoming = [Object.assign(p('Glowstone_Joe'), { at: ago(12) })];
+  let outgoing = [Object.assign(p('Notch'), { at: ago(60 * 26) })];
+  const copy = (l) => l.map((x) => Object.assign({}, x));
+  return {
+    list: () => ({ friends: copy(friends), incoming: copy(incoming), outgoing: copy(outgoing) }),
+    request(name) {
+      const n = name.trim();
+      if (/^nobody/i.test(n)) throw 'Игрок «' + n + '» ещё не заходил в Signal Launcher';
+      if (friends.some((f) => f.name.toLowerCase() === n.toLowerCase())) throw n + ' уже у вас в друзьях';
+      const theirs = incoming.find((f) => f.name.toLowerCase() === n.toLowerCase());
+      if (theirs) return this.respond(theirs.uuid, true);
+      if (!outgoing.some((f) => f.name.toLowerCase() === n.toLowerCase())) outgoing.unshift(Object.assign(p(n, 'offline'), { at: ago(0) }));
+      return { state: 'pending' };
+    },
+    respond(uuid, accept) {
+      const r = incoming.find((f) => f.uuid === uuid);
+      incoming = incoming.filter((f) => f.uuid !== uuid);
+      if (r && accept) friends.push({ uuid: r.uuid, name: r.name, kind: r.kind, status: 'in_menu', detail: null, since: ago(0) });
+      return { state: accept ? 'friends' : 'declined' };
+    },
+    remove(uuid) {
+      friends = friends.filter((f) => f.uuid !== uuid);
+      outgoing = outgoing.filter((f) => f.uuid !== uuid);
+    }
+  };
+})();
 const modpackDropHandlers = [];
 const skinDropHandlers = [];
 // Browser preview only: a believable game log (with a warning, an error and a stack trace)
@@ -399,6 +437,49 @@ window.SignalBridge = {
 
   async companionSaveLook(profile, look) {
     return isTauri ? invoke('companion_save_look', { profile, look }) : null;
+  },
+
+  // Friends (server/src/friends.rs) of the profile: { friends, incoming, outgoing } or { unclaimed: true }.
+  // Friends carry { uuid, name, kind, status, detail, since }. The browser preview keeps a demo list.
+  async friendsList(profile) {
+    if (isTauri) return invoke('friends_list', { profile });
+    await delay(250);
+    return demoFriends.list();
+  },
+
+  // { state: 'pending' | 'friends' }
+  async friendsRequest(profile, name) {
+    if (isTauri) return invoke('friends_request', { profile, name });
+    await delay(300);
+    return demoFriends.request(name);
+  },
+
+  async friendsRespond(profile, uuid, accept) {
+    if (isTauri) return invoke('friends_respond', { profile, uuid, accept });
+    await delay(200);
+    return demoFriends.respond(uuid, accept);
+  },
+
+  // Removes a friend or withdraws a request.
+  async friendsRemove(profile, uuid) {
+    if (isTauri) return invoke('friends_remove', { profile, uuid });
+    await delay(200);
+    demoFriends.remove(uuid);
+  },
+
+  // The presence socket (src-tauri/src/presence.rs) for the profile; null closes it.
+  async presenceConnect(profile) {
+    if (isTauri) return invoke('presence_connect', { profile });
+    setTimeout(() => presenceHandlers.forEach((h) => h.state({ state: profile ? 'online' : 'off' })), 300);
+  },
+
+  // onState({ state, retryIn?, error? }), onEvent(server event: hello | presence | friends_changed).
+  onPresence(onState, onEvent) {
+    presenceHandlers.push({ state: onState, event: onEvent });
+    if (isTauri) {
+      listen('presence-state', (e) => onState(e.payload));
+      listen('presence-event', (e) => onEvent(e.payload));
+    }
   },
 
   async removeAccount(id) {

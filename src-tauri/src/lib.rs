@@ -15,6 +15,7 @@ mod mrpack;
 mod news;
 mod offline_skin;
 mod packs;
+mod presence;
 mod saves;
 mod servers;
 mod skinpack;
@@ -31,7 +32,7 @@ use serde_json::json;
 /// it for development (a local signal-api).
 const SIGNAL_SERVER: &str = "https://signallauncher.mooo.com";
 
-fn signal_server() -> String {
+pub(crate) fn signal_server() -> String {
     std::env::var("SIGNAL_SERVER")
         .ok()
         .map(|s| s.trim().trim_end_matches('/').to_string())
@@ -321,6 +322,39 @@ fn ms_login_cancel(state: tauri::State<'_, auth::LoginState>) {
 #[tauri::command]
 async fn companion_look(app: tauri::AppHandle, profile: companion::ProfileRef) -> Result<serde_json::Value, String> {
     companion::look(&app, profile).await
+}
+
+/// Friends: `{ friends, incoming, outgoing }`, or `{ unclaimed: true }` for an offline nickname not yet on the server.
+#[tauri::command]
+async fn friends_list(app: tauri::AppHandle, profile: companion::ProfileRef) -> Result<serde_json::Value, String> {
+    companion::friends(&app, profile).await
+}
+
+#[tauri::command]
+async fn friends_request(app: tauri::AppHandle, profile: companion::ProfileRef, name: String) -> Result<serde_json::Value, String> {
+    companion::friend_request(&app, profile, name).await
+}
+
+#[tauri::command]
+async fn friends_respond(app: tauri::AppHandle, profile: companion::ProfileRef, uuid: String, accept: bool) -> Result<serde_json::Value, String> {
+    companion::friend_respond(&app, profile, uuid, accept).await
+}
+
+#[tauri::command]
+async fn friends_remove(app: tauri::AppHandle, profile: companion::ProfileRef, uuid: String) -> Result<(), String> {
+    companion::friend_remove(&app, profile, uuid).await
+}
+
+/// Opens (or keeps) the presence socket for the selected profile; `null` closes it.
+#[tauri::command]
+fn presence_connect(app: tauri::AppHandle, profile: Option<companion::ProfileRef>) -> Result<(), String> {
+    match profile {
+        Some(p) => presence::connect(app, p),
+        None => {
+            presence::disconnect(&app);
+            Ok(())
+        }
+    }
 }
 
 /// Signal Companion: saves the look for the selected profile.
@@ -699,6 +733,11 @@ pub fn run() {
             launch_minecraft,
             companion_look,
             companion_save_look,
+            friends_list,
+            friends_request,
+            friends_respond,
+            friends_remove,
+            presence_connect,
             generate_ai_modpack,
             open_folder,
             install_mods,

@@ -3,6 +3,46 @@
 // "patterns": {1}, {2}… stand for the dynamic parts of composed messages.
 export default {
  "exact": {
+  "Кнопка друзей": "Friends button",
+  "В сети": "Online",
+  "В лаунчере": "In the launcher",
+  "Играет": "Playing",
+  "Открыл мир для друзей": "Hosting a world for friends",
+  "Не в сети": "Offline",
+  "Не подключено": "Not connected",
+  "Подключение…": "Connecting…",
+  "только что": "just now",
+  "Отправка…": "Sending…",
+  "Добавить по нику": "Add by nickname",
+  "Ник игрока": "Player's nickname",
+  "Принять": "Accept",
+  "Отклонить": "Decline",
+  "Удалить из друзей": "Remove from friends",
+  "Загружаем друзей…": "Loading friends…",
+  "Заявка в друзья": "Friend request",
+  "Заявка не обработана": "Request not handled",
+  "Это ваш собственный ник": "That's your own nickname",
+  "Смените ник «Player» на свой, чтобы добавлять друзей": "Change the «Player» nickname to your own to add friends",
+  "Друзья привязаны к нику. У офлайн-аккаунта «Player» его нет: добавьте аккаунт со своим ником или войдите через Microsoft.": "Friends belong to a nickname, and the «Player» offline account has none: add an account with your own nickname or sign in with Microsoft.",
+  "Пока никого. Добавьте друга по нику: он увидит заявку в своём Signal Launcher.": "Nobody here yet. Add a friend by nickname: they will see the request in their Signal Launcher.",
+  "Ник «{{fr.myName}}» ещё не заходил на сервер Signal. Первая заявка закрепит его за этим компьютером, и друзья увидят вас в сети.": "The nickname «{{fr.myName}}» has not been on the Signal server yet. Your first request binds it to this computer, and friends will see you online.",
+  "Заявки · {{fr.incomingCount}}": "Requests · {{fr.incomingCount}}",
+  "В сети · {{fr.onlineCount}}": "Online · {{fr.onlineCount}}",
+  "Не в сети · {{fr.offlineCount}}": "Offline · {{fr.offlineCount}}",
+  "Отправленные · {{fr.outgoingCount}}": "Sent · {{fr.outgoingCount}}",
+  "хочет дружить · {{f.when}}": "wants to be friends · {{f.when}}",
+  "ждёт ответа · {{f.when}}": "awaiting reply · {{f.when}}",
+  "Принять заявку {{f.name}}": "Accept {{f.name}}'s request",
+  "Отклонить заявку {{f.name}}": "Decline {{f.name}}'s request",
+  "Отменить заявку {{f.name}}": "Cancel the request to {{f.name}}",
+  "Удалить {{f.name}} из друзей": "Remove {{f.name}} from friends",
+  "Нельзя добавить в друзья самого себя": "You can't add yourself as a friend",
+  "Нет такой заявки": "No such request",
+  "Слишком много открытых лаунчеров": "Too many launchers open",
+  "Сервер Signal не ответил": "The Signal server did not answer",
+  "Сервер Signal не принял вход": "The Signal server refused the sign-in",
+  "Сервер закрыл соединение": "The server closed the connection",
+  "Сервер не отвечает": "The server is not responding",
   "ИИ не настроен на сервере": "AI is not set up on the server",
   "Сервер ИИ недоступен": "AI server unreachable",
   "ИИ не настроен": "AI is not set up",
@@ -1417,6 +1457,54 @@ export default {
   "Косметика и значки Signal в игре (Fabric): мод ставится в установку при запуске, без него — убирается": "Signal cosmetics and badges in game (Fabric): the mod is added to the installation at launch, and removed when this is off"
  },
  "patterns": [
+  [
+   "{1} теперь у вас в друзьях",
+   "{1} is now your friend"
+  ],
+  [
+   "{1} уже у вас в друзьях",
+   "{1} is already your friend"
+  ],
+  [
+   "{1} хочет добавить вас в друзья.",
+   "{1} wants to add you as a friend."
+  ],
+  [
+   "Игрок «{1}» ещё не заходил в Signal Launcher",
+   "Player «{1}» has not used Signal Launcher yet"
+  ],
+  [
+   "Нет связи · повтор через {1} с",
+   "No connection · retrying in {1} s"
+  ],
+  [
+   "Друзья: в сети {1}",
+   "Friends: {1} online"
+  ],
+  [
+   "Друзья: заявок {1}",
+   "Friends: {1} requests"
+  ],
+  [
+   "{1} дн",
+   "{1} d"
+  ],
+  [
+   "Соединение прервалось: {1}",
+   "The connection dropped: {1}"
+  ],
+  [
+   "Не удалось отправить статус: {1}",
+   "Could not send the status: {1}"
+  ],
+  [
+   "Неверный адрес сервера: {1}",
+   "Bad server address: {1}"
+  ],
+  [
+   "Не больше {1} неотвеченных заявок",
+   "At most {1} unanswered requests"
+  ],
   [
    "{1} · скрыт",
    "{1} · hidden"

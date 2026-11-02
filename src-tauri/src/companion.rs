@@ -18,10 +18,14 @@ use tauri::{AppHandle, Manager};
 
 use crate::{auth, game};
 
-const API: &str = "https://signallauncher.mooo.com/v1";
 const MOJANG_JOIN: &str = "https://sessionserver.mojang.com/session/minecraft/join";
 /// A stored API token is renewed this long before it runs out.
 const TOKEN_MARGIN_S: i64 = 3600;
+
+/// `https://signallauncher.mooo.com/v1`, or the `SIGNAL_SERVER` override.
+pub fn api() -> String {
+    format!("{}/v1", crate::signal_server())
+}
 
 /// The profile picked in the launcher. Microsoft accounts carry their UUID in `id`.
 #[derive(Debug, Clone, Deserialize)]
@@ -99,7 +103,7 @@ pub fn offline_uuid(name: &str) -> String {
 }
 
 impl ProfileRef {
-    fn uuid(&self) -> Result<String, String> {
+    pub fn uuid(&self) -> Result<String, String> {
         match self.kind.as_str() {
             "ms" => self.id.as_deref().map(dashed).ok_or_else(|| "У аккаунта Microsoft нет UUID".to_string()),
             "offline" if valid_name(&self.name) => Ok(offline_uuid(&self.name)),
@@ -119,7 +123,7 @@ fn valid_name(name: &str) -> bool {
 
 /// Calls the API. Errors come back as (status, message) so callers can react to 401 or 409.
 async fn call(client: &reqwest::Client, method: Method, path: &str, token: Option<&str>, body: Option<Value>) -> Result<Value, (StatusCode, String)> {
-    let mut req = client.request(method, format!("{API}{path}"));
+    let mut req = client.request(method, format!("{}{path}", api()));
     if let Some(t) = token {
         req = req.bearer_auth(t);
     }
@@ -230,6 +234,26 @@ fn chrono_free_parse(s: &str) -> Option<i64> {
     Some(days * 86400 + hh * 3600 + mm * 60 + ss)
 }
 
+fn stored_token(app: &AppHandle, uuid: &str) -> Option<Token> {
+    load(app).tokens.get(uuid).cloned().filter(|t| t.expires_at - now_s() > TOKEN_MARGIN_S)
+}
+
+/// A bearer token for the profile (the presence socket sends it itself). `fresh` signs in again, after the
+/// server refused the stored one. `None`: an offline nickname that was never claimed.
+pub async fn token(app: &AppHandle, p: &ProfileRef, fresh: bool) -> Result<Option<String>, String> {
+    let uuid = p.uuid()?;
+    if p.kind == "offline" && !load(app).keys.contains_key(&uuid) {
+        return Ok(None);
+    }
+    if !fresh {
+        if let Some(t) = stored_token(app, &uuid) {
+            return Ok(Some(t.token));
+        }
+    }
+    let client = game::http_client()?;
+    Ok(Some(sign_in(app, &client, p, &uuid).await?.token))
+}
+
 /// Calls the API as the profile: reuses the stored token, signs in when there is none or it was refused.
 /// `claim: false` keeps an offline nickname that has no key yet unclaimed: the call is skipped (`Ok(None)`).
 /// Nicknames are bound first come, first served, so only an explicit save may claim one (everybody starts as «Player»).
@@ -240,8 +264,7 @@ async fn as_profile(app: &AppHandle, p: &ProfileRef, claim: bool, method: Method
         return Ok(None);
     }
     let client = game::http_client()?;
-    let stored = store.tokens.get(&uuid).cloned().filter(|t| t.expires_at - now_s() > TOKEN_MARGIN_S);
-    let token = match stored {
+    let token = match stored_token(app, &uuid) {
         Some(t) => t,
         None => sign_in(app, &client, p, &uuid).await?,
     };
@@ -266,6 +289,28 @@ pub async fn look(app: &AppHandle, profile: ProfileRef) -> Result<Value, String>
 /// Saves the look for the profile: `{ rev, updatedAt }`.
 pub async fn save_look(app: &AppHandle, profile: ProfileRef, look: Value) -> Result<Value, String> {
     Ok(as_profile(app, &profile, true, Method::PUT, "/me/look", Some(json!({ "look": look }))).await?.unwrap_or_default())
+}
+
+/// `{ friends, incoming, outgoing }` (server/src/friends.rs), or `{ unclaimed: true }` for an offline
+/// nickname that never talked to the server: it is claimed by its first friend request.
+pub async fn friends(app: &AppHandle, profile: ProfileRef) -> Result<Value, String> {
+    Ok(as_profile(app, &profile, false, Method::GET, "/friends", None).await?.unwrap_or_else(|| json!({ "unclaimed": true })))
+}
+
+/// Asks `name` to be friends: `{ state: "pending" | "friends", … }`.
+pub async fn friend_request(app: &AppHandle, profile: ProfileRef, name: String) -> Result<Value, String> {
+    let body = json!({ "name": name.trim() });
+    Ok(as_profile(app, &profile, true, Method::POST, "/friends/request", Some(body)).await?.unwrap_or_default())
+}
+
+pub async fn friend_respond(app: &AppHandle, profile: ProfileRef, uuid: String, accept: bool) -> Result<Value, String> {
+    let body = json!({ "uuid": uuid, "accept": accept });
+    Ok(as_profile(app, &profile, false, Method::POST, "/friends/respond", Some(body)).await?.unwrap_or_default())
+}
+
+/// Removes a friend or withdraws a request.
+pub async fn friend_remove(app: &AppHandle, profile: ProfileRef, uuid: String) -> Result<(), String> {
+    as_profile(app, &profile, false, Method::POST, "/friends/remove", Some(json!({ "uuid": uuid }))).await.map(|_| ())
 }
 
 #[cfg(test)]

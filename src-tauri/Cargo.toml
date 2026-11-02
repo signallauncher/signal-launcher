@@ -19,6 +19,9 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 md5 = "0.7"
 futures-util = "0.3"
+# friends' live statuses (src/presence.rs)
+tokio = { version = "1", features = ["time", "sync", "macros"] }
+tokio-tungstenite = { version = "0.29", features = ["rustls-tls-webpki-roots"] }
 zip = { version = "2", default-features = false, features = ["deflate"] }
 flate2 = "1"
 fastnbt = "2"

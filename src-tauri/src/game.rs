@@ -513,6 +513,7 @@ pub async fn launch(app: AppHandle, opts: LaunchOptions) -> Result<LaunchOutcome
             let _ = window.minimize();
         }
     }
+    crate::presence::playing(&label);
     if opts.discord {
         crate::discord::set_playing(opts.instance_name.clone(), profile.id.clone(), now_ms());
     }
@@ -552,7 +553,9 @@ fn watch_game(
     let started_at = std::time::SystemTime::now();
     std::thread::spawn(move || {
         let code = child.wait().ok().and_then(|status| status.code());
-        crate::gamedir::RUNNING_GAMES.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
+        if crate::gamedir::RUNNING_GAMES.fetch_sub(1, std::sync::atomic::Ordering::SeqCst) == 1 {
+            crate::presence::in_menu();
+        }
         // Everything the game printed is read and sent before the exit is announced.
         let session = console.finish();
         let seconds = started.elapsed().as_secs();

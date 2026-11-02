@@ -65,6 +65,7 @@ const UI_PARTS = [
   ['sidebar', 'Боковое меню', { drag: true }],
   ['title', 'Заголовок страницы', { hide: true, drag: true }],
   ['sysIcons', 'Системные кнопки', { drag: true }],
+  ['friends', 'Друзья', { hide: true }],
   ['sound', 'Звук', { hide: true }],
   ['notifications', 'Уведомления', { hide: true }],
   ['account', 'Аккаунт', { hide: true, drag: true }],
@@ -75,7 +76,7 @@ const UI_PARTS = [
 ];
 const UI_PART = Object.fromEntries(UI_PARTS.map(([k, label, o]) => [k, Object.assign({ label: label }, o)]));
 // Visibility switches in the settings (badges are not a block of their own).
-const UI_HIDE = [['title', 'Заголовок страницы'], ['sound', 'Кнопка звука'], ['notifications', 'Уведомления'],
+const UI_HIDE = [['title', 'Заголовок страницы'], ['friends', 'Кнопка друзей'], ['sound', 'Кнопка звука'], ['notifications', 'Уведомления'],
   ['account', 'Панель аккаунта'], ['badges', 'Бейджи в меню'], ['version', 'Выбор версии'], ['console', 'Кнопка консоли'],
   ['stage', 'Персонаж']];
 const UI_BASE = { preset: 'classic', sidebar: 'left', icons: false, glass: false, launch: 'full', mono: false, stage: 'center', hide: {}, pos: {} };
@@ -222,19 +223,20 @@ class Component extends DCLogic {
       il: null,
       backupFreq: 'launch',
       friendsOpen: false,
-      friendsTab: 'list',
-      friends: [
-        { id: 'f1', name: 'Kira_Redstone', skin: 'kira', status: 'game', detail: 'В игре · Release 1.21.9' },
-        { id: 'f2', name: 'Steve_Builds', skin: 'helmet', status: 'online', detail: 'В сети · в лаунчере' },
-        { id: 'f3', name: 'Mira_Snow', skin: 'mint', status: 'game', detail: 'В игре · Fabric 1.21.1' },
-        { id: 'f4', name: 'OldMiner', skin: 'hood', status: 'offline', detail: 'Был(а) в сети 2 ч назад' },
-        { id: 'f5', name: 'Glowstone_Joe', skin: 'night', status: 'offline', detail: 'Был(а) в сети вчера' }
-      ],
-      codeInput: '',
+      // Friends of the selected profile from the Signal server: null until loaded, else { friends, incoming, outgoing }
+      fr: null,
+      frErr: '',
+      // an offline nickname the server has not seen: its first friend request binds it to this computer
+      frUnclaimed: false,
+      frBusy: '',
+      frDel: '',
+      // lowercase nickname -> 8×8 face of its skin
+      frFaces: {},
+      // the presence socket: { state: off | connecting | online | reconnecting | unclaimed, retryIn?, error? }
+      presence: { state: 'off' },
       nickFriend: '',
       friendMsg: '',
       friendMsgOk: true,
-      copied: false,
       skinModal: false,
       skinUrl: '',
       skinKey: 'default',
@@ -375,7 +377,9 @@ class Component extends DCLogic {
     this.loadVersions(false);
     this.loadInstances(true);
     this.loadMemory();
-    this.loadAccounts().then(() => this.syncLook());
+    this.loadAccounts().then(() => { this.syncLook(); this.connectFriends(); });
+    window.SignalBridge.onPresence((st) => this.onPresenceState(st), (ev) => this.onPresenceEvent(ev));
+    faceOf('/assets/img/default-skin.png').then((face) => { this.steveFace = face; }).catch(() => {});
     // Once the saved state is in: a save from before skins belonged to accounts gives the skin on the model
     // to the active account; otherwise the active account's nickname skin is checked.
     this.setState({}, () => {
@@ -411,6 +415,7 @@ class Component extends DCLogic {
 
   componentDidUpdate(prevProps, prevState) {
     if (prevState && prevState.accountId !== this.state.accountId) this.syncLook();
+    if (this.frKey !== undefined && this.frKey !== this.friendsKey()) this.connectFriends();
     else if (prevState && (prevState.skinUrl !== this.state.skinUrl || prevState.slim !== this.state.slim)) this.adoptSkin();
     this.syncVars();
     this.syncViewer();
@@ -609,7 +614,8 @@ class Component extends DCLogic {
     clearInterval(this.timer);
     clearTimeout(this.timer2);
     clearTimeout(this.msTimer);
-    clearTimeout(this.copyTimer);
+    clearTimeout(this.frTimer);
+    clearTimeout(this.frDelTimer);
     cancelAnimationFrame(this.raf);
     clearInterval(this.dlTimer);
     clearTimeout(this.cosTimer);
@@ -717,6 +723,142 @@ class Component extends DCLogic {
     window.SignalBridge.companionSaveLook(profile, look)
       .then((r) => { if (req === this.lookReq) this.setState({ cosSync: { state: r ? 'synced' : 'local', msg: '' } }); })
       .catch((e) => { if (req === this.lookReq) this.setState({ cosSync: { state: 'error', msg: String(e) } }); });
+  }
+
+  // The profile friends belong to, or null: «Player» is everybody's first offline name, so it gets none.
+  friendsProfile() {
+    const p = this.companionProfile();
+    return p && !(p.kind === 'offline' && !lookupName(p.name)) ? p : null;
+  }
+
+  friendsKey() {
+    const p = this.companionProfile();
+    return p ? p.kind + ':' + (p.id || p.name) : '';
+  }
+
+  // A new profile: its own presence socket and friend list.
+  connectFriends() {
+    this.frKey = this.friendsKey();
+    const profile = this.friendsProfile();
+    window.SignalBridge.presenceConnect(profile).catch(() => {});
+    this.frReq = (this.frReq || 0) + 1;
+    this.setState({ fr: null, frErr: '', frUnclaimed: false, frDel: '', friendMsg: '' });
+    if (profile) this.loadFriends();
+  }
+
+  // Friends from the server; the newest request wins.
+  loadFriends() {
+    const profile = this.friendsProfile();
+    if (!profile) return;
+    const req = (this.frReq || 0) + 1;
+    this.frReq = req;
+    window.SignalBridge.friendsList(profile)
+      .then((r) => {
+        if (req !== this.frReq) return;
+        if (!r || r.unclaimed) {
+          this.setState({ fr: { friends: [], incoming: [], outgoing: [] }, frUnclaimed: true, frErr: '' });
+          return;
+        }
+        const before = this.state.fr;
+        this.setState({ fr: r, frUnclaimed: false, frErr: '' });
+        this.announceRequests(before, r);
+        this.loadFriendFaces(r);
+      })
+      .catch((e) => { if (req === this.frReq) this.setState({ frErr: String(e) }); });
+  }
+
+  // A toast (kept in the bell) for every request that arrived since the previous list.
+  announceRequests(before, now) {
+    if (!before || this.state.frUnclaimed) return;
+    const known = new Set(before.incoming.map((f) => f.uuid));
+    const fresh = now.incoming.filter((f) => !known.has(f.uuid));
+    if (fresh.length) this.play('done');
+    fresh.forEach((f) => window.SignalBridge.toast(f.name + ' хочет добавить вас в друзья.', { kind: 'info', title: 'Заявка в друзья', notify: true }));
+  }
+
+  // Heads come from the nickname's skin, the same lookup offline accounts use.
+  loadFriendFaces(r) {
+    r.friends.concat(r.incoming, r.outgoing).forEach((f) => {
+      const key = f.name.toLowerCase();
+      if (this.state.frFaces[key]) return;
+      this.resolveNickSkin(f.name)
+        .then((d) => {
+          if (d && d.face && d.face.length === 64) this.setState({ frFaces: Object.assign({}, this.state.frFaces, { [key]: d.face }) });
+        })
+        .catch(() => {});
+    });
+  }
+
+  onPresenceState(st) {
+    this.setState({ presence: st || { state: 'off' } });
+  }
+
+  // hello: the socket (re)connected, so the list may be stale; presence: one friend's new status.
+  onPresenceEvent(ev) {
+    if (!ev) return;
+    if (ev.type === 'hello' || ev.type === 'friends_changed') {
+      clearTimeout(this.frTimer);
+      this.frTimer = setTimeout(() => this.loadFriends(), ev.type === 'hello' ? 0 : 250);
+      return;
+    }
+    const fr = this.state.fr;
+    if (ev.type !== 'presence' || !fr || !fr.friends.some((f) => f.uuid === ev.uuid)) return;
+    const seen = { status: ev.status, detail: ev.detail || null, since: ev.since || null };
+    this.setState({ fr: Object.assign({}, fr, { friends: fr.friends.map((f) => (f.uuid === ev.uuid ? Object.assign({}, f, seen) : f)) }) });
+  }
+
+  sendFriendRequest() {
+    const s = this.state;
+    const name = s.nickFriend.trim();
+    const profile = this.friendsProfile();
+    const say = (msg, ok) => this.setState({ friendMsg: msg, friendMsgOk: ok });
+    if (!profile) { say('Смените ник «Player» на свой, чтобы добавлять друзей', false); return; }
+    if (!NICK.test(name)) { say('Никнейм: 3–16 символов, латиница, цифры и _', false); return; }
+    if (name.toLowerCase() === profile.name.toLowerCase()) { say('Это ваш собственный ник', false); return; }
+    const fr = s.fr || { friends: [], outgoing: [] };
+    if (fr.friends.some((f) => f.name.toLowerCase() === name.toLowerCase())) { say(name + ' уже у вас в друзьях', false); return; }
+    const wasUnclaimed = s.frUnclaimed;
+    this.setState({ frBusy: 'add', friendMsg: '' });
+    window.SignalBridge.friendsRequest(profile, name)
+      .then((r) => {
+        const friends = r && r.state === 'friends';
+        this.setState({ frBusy: '', nickFriend: '' });
+        say(friends ? name + ' теперь у вас в друзьях' : 'Заявка отправлена: ' + name, true);
+        this.play(friends ? 'done' : 'place');
+        // the first request bound the nickname: now it can go online
+        if (wasUnclaimed) window.SignalBridge.presenceConnect(profile).catch(() => {});
+        this.loadFriends();
+      })
+      .catch((e) => { this.setState({ frBusy: '' }); say(String(e), false); });
+  }
+
+  answerFriend(f, accept) {
+    const profile = this.friendsProfile();
+    if (!profile || this.state.frBusy) return;
+    this.setState({ frBusy: f.uuid });
+    window.SignalBridge.friendsRespond(profile, f.uuid, accept)
+      .then(() => {
+        this.setState({ frBusy: '' });
+        if (accept) this.play('done');
+        this.loadFriends();
+      })
+      .catch((e) => { this.setState({ frBusy: '' }); window.SignalBridge.toast(String(e), { kind: 'error', title: 'Заявка не обработана' }); });
+  }
+
+  // A friend goes after a second click («Удалить?»); a sent request is withdrawn at once.
+  removeFriend(f, confirm) {
+    const profile = this.friendsProfile();
+    if (!profile) return;
+    if (confirm && this.state.frDel !== f.uuid) {
+      this.setState({ frDel: f.uuid });
+      clearTimeout(this.frDelTimer);
+      this.frDelTimer = setTimeout(() => this.setState({ frDel: '' }), 3000);
+      return;
+    }
+    this.setState({ frDel: '', frBusy: f.uuid });
+    window.SignalBridge.friendsRemove(profile, f.uuid)
+      .then(() => { this.setState({ frBusy: '' }); this.loadFriends(); })
+      .catch((e) => { this.setState({ frBusy: '' }); window.SignalBridge.toast(String(e), { kind: 'error', title: 'Не удалось удалить' }); });
   }
 
   // Push skin, outer layer, pose and worn cosmetics into the WebGL model.
@@ -1141,28 +1283,7 @@ class Component extends DCLogic {
       };
     });
 
-    const statusInfo = {
-      game: { dot: '#5BD07A', text: '#86DDA0', order: 0 },
-      online: { dot: '#4FA3FF', text: '#8EC2FF', order: 1 },
-      pending: { dot: '#F0B95A', text: '#F0B95A', order: 2 },
-      offline: { dot: '#5D6672', text: '#8A94A3', order: 3 }
-    };
-    const friendsView = s.friends.slice().sort((a, b) => statusInfo[a.status].order - statusInfo[b.status].order).map((f) => {
-      const h = this.head(f.skin);
-      return Object.assign({}, f, {
-        bg: h.bg, sh: h.sh4, dot: statusInfo[f.status].dot, textColor: statusInfo[f.status].text,
-        fade: f.status === 'offline' ? 0.55 : 1,
-        canJoin: f.status === 'game', canInvite: f.status === 'online', isPending: f.status === 'pending',
-        cancel: () => this.setState({ friends: s.friends.filter((x) => x.id !== f.id) })
-      });
-    });
-    const myCode = 'SGNL-7K4Q-29XD';
-    const addFriend = (name, detail) => {
-      this.setState({
-        friends: s.friends.concat([{ id: 'f' + Date.now(), name: name, skin: 'hood', status: 'pending', detail: detail }]),
-        friendMsg: 'Заявка отправлена: ' + name, friendMsgOk: true, codeInput: '', nickFriend: ''
-      });
-    };
+    const fv = this.friendsVals();
 
     const wardrobe = ['night', 'kira', 'helmet', 'hood', 'mint'].map((key) => {
       const h = this.head(key);
@@ -1558,40 +1679,17 @@ class Component extends DCLogic {
       },
 
       friendsOpen: s.friendsOpen,
-      toggleFriends: () => this.setState({ friendsOpen: !s.friendsOpen, accMenu: false, verMenu: false, friendMsg: '' }),
-      onlineCount: s.friends.filter((f) => f.status === 'game' || f.status === 'online').length,
-      friendCount: s.friends.length,
-      fTabList: s.friendsTab === 'list',
-      fTabAdd: s.friendsTab === 'add',
-      fTabListCls: s.friendsTab === 'list' ? 'is-active' : '',
-      fTabAddCls: s.friendsTab === 'add' ? 'is-active' : '',
-      setFTabList: () => this.setState({ friendsTab: 'list' }),
-      setFTabAdd: () => this.setState({ friendsTab: 'add', friendMsg: '' }),
-      friendsView: friendsView,
-      myCode: myCode,
-      copyLabel: s.copied ? 'Скопировано ✓' : 'Копировать',
-      copyCode: () => {
-        try { if (navigator.clipboard) navigator.clipboard.writeText(myCode).catch(() => {}); } catch (e) {}
-        this.setState({ copied: true });
-        clearTimeout(this.copyTimer);
-        this.copyTimer = setTimeout(() => this.setState({ copied: false }), 1600);
+      toggleFriends: () => {
+        const open = !s.friendsOpen;
+        this.setState({ friendsOpen: open, accMenu: false, verMenu: false, notifOpen: false, friendMsg: '', frDel: '' });
+        if (open && s.frErr) this.loadFriends();
       },
-      codeInput: s.codeInput,
-      onCodeInput: (e) => this.setState({ codeInput: e.target.value.toUpperCase() }),
+      closeFriends: () => this.setState({ friendsOpen: false }),
+      fr: fv,
       nickFriend: s.nickFriend,
-      onNickFriend: (e) => this.setState({ nickFriend: e.target.value }),
-      addByCode: () => {
-        const code = s.codeInput.trim().toUpperCase();
-        if (!/^SGNL-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code)) { this.setState({ friendMsg: 'Код должен выглядеть так: SGNL-XXXX-XXXX', friendMsgOk: false }); return; }
-        if (code === myCode) { this.setState({ friendMsg: 'Это ваш собственный код', friendMsgOk: false }); return; }
-        addFriend('Игрок ' + code.slice(5), 'Заявка отправлена · код ' + code);
-      },
-      addByNick: () => {
-        const n = s.nickFriend.trim();
-        if (!/^[A-Za-z0-9_]{3,16}$/.test(n)) { this.setState({ friendMsg: 'Никнейм: 3–16 символов, латиница, цифры и _', friendMsgOk: false }); return; }
-        if (s.friends.some((f) => f.name.toLowerCase() === n.toLowerCase())) { this.setState({ friendMsg: n + ' уже в списке друзей', friendMsgOk: false }); return; }
-        addFriend(n, 'Заявка отправлена · ожидает ответа');
-      },
+      onNickFriend: (e) => this.setState({ nickFriend: e.target.value, friendMsg: '' }),
+      onNickFriendKey: (e) => { if (e.key === 'Enter') this.sendFriendRequest(); },
+      addByNick: () => this.sendFriendRequest(),
       hasFriendMsg: !!s.friendMsg,
       friendMsg: s.friendMsg,
       friendMsgColor: s.friendMsgOk ? '#86DDA0' : '#F2998B',
@@ -3775,6 +3873,95 @@ class Component extends DCLogic {
         this.play('close');
         this.setState({ launching: false, launched: false, progress: 0, launchStage: '' });
       });
+  }
+
+  // The friends drawer: rows with heads, statuses and actions, the socket's state and the header badge.
+  friendsVals() {
+    const s = this.state;
+    const fr = s.fr || { friends: [], incoming: [], outgoing: [] };
+    const looks = {
+      playing_singleplayer: { dot: '#5BD07A', text: '#86DDA0', label: 'Играет', order: 0 },
+      hosting_p2p: { dot: '#B48CFF', text: '#CDB8FF', label: 'Открыл мир для друзей', order: 0 },
+      in_menu: { dot: '#4FA3FF', text: '#8EC2FF', label: 'В лаунчере', order: 1 },
+      offline: { dot: '#5D6672', text: '#8A94A3', label: 'Не в сети', order: 2 }
+    };
+    const ago = (iso) => {
+      const min = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000));
+      if (!iso || isNaN(min)) return '';
+      if (min < 1) return 'только что';
+      if (min < 60) return min + ' мин';
+      if (min < 48 * 60) return Math.floor(min / 60) + ' ч';
+      return Math.floor(min / 1440) + ' дн';
+    };
+    const head = (name) => {
+      const face = s.frFaces[name.toLowerCase()] || this.steveFace;
+      const h = face && face.length === 64 ? this.faceHead(face) : this.head('default');
+      return { bg: h.bg, sh: h.sh4 };
+    };
+    const person = (f) => Object.assign({ name: f.name, isOffline: f.kind === 'offline', busy: s.frBusy === f.uuid }, head(f.name));
+    const friends = fr.friends
+      .map((f) => Object.assign({}, f, { look: looks[f.status] || looks.offline }))
+      .sort((a, b) => a.look.order - b.look.order || a.name.toLowerCase().localeCompare(b.name.toLowerCase()))
+      .map((f) => {
+        const on = f.status !== 'offline';
+        const time = f.status !== 'in_menu' && f.since ? ago(f.since) : '';
+        return Object.assign(person(f), {
+          on: on,
+          dot: f.look.dot, textColor: f.look.text, fade: on ? 1 : 0.55,
+          detail: [f.look.label, on ? f.detail : '', on ? time : ''].filter(Boolean).join(' · '),
+          delCls: s.frDel === f.uuid ? 'acc-del is-confirm' : 'acc-del',
+          delConfirm: s.frDel === f.uuid,
+          delIdle: s.frDel !== f.uuid,
+          del: () => this.removeFriend(f, true)
+        });
+      });
+    const online = friends.filter((f) => f.on);
+    const offline = friends.filter((f) => !f.on);
+    const incoming = fr.incoming.map((f) => Object.assign(person(f), {
+      when: ago(f.at),
+      accept: () => this.answerFriend(f, true),
+      decline: () => this.answerFriend(f, false)
+    }));
+    const outgoing = fr.outgoing.map((f) => Object.assign(person(f), { when: ago(f.at), cancel: () => this.removeFriend(f, false) }));
+    const p = s.presence || { state: 'off' };
+    const link = {
+      online: ['#5BD07A', 'В сети'],
+      connecting: ['#F0B95A', 'Подключение…'],
+      reconnecting: ['#F2998B', p.retryIn ? 'Нет связи · повтор через ' + p.retryIn + ' с' : 'Нет связи'],
+      unclaimed: ['#8A94A3', 'Не в сети'],
+      off: ['#8A94A3', 'Не подключено']
+    }[p.state] || ['#8A94A3', 'Не подключено'];
+    const profile = this.friendsProfile();
+    const loaded = !!s.fr;
+    return {
+      online, offline, incoming, outgoing,
+      hasOnline: online.length > 0,
+      hasOffline: offline.length > 0,
+      hasIncoming: incoming.length > 0,
+      hasOutgoing: outgoing.length > 0,
+      onlineCount: online.length,
+      offlineCount: offline.length,
+      incomingCount: incoming.length,
+      outgoingCount: outgoing.length,
+      linkColor: link[0],
+      linkText: link[1],
+      linkTitle: p.error || '',
+      noProfile: !profile,
+      unclaimed: !!profile && s.frUnclaimed,
+      loading: !!profile && !loaded && !s.frErr,
+      hasErr: !!profile && !!s.frErr,
+      err: s.frErr,
+      retry: () => { this.setState({ frErr: '' }); this.loadFriends(); },
+      empty: !!profile && loaded && !s.frUnclaimed && !friends.length && !incoming.length && !outgoing.length,
+      myName: profile ? profile.name : '',
+      adding: s.frBusy === 'add',
+      addLabel: s.frBusy === 'add' ? 'Отправка…' : 'Добавить',
+      // header badge: requests first, else friends online
+      badge: incoming.length || online.length,
+      hasBadge: incoming.length + online.length > 0,
+      badgeCls: incoming.length ? 'fr-badge is-req' : 'fr-badge',
+      buttonLabel: incoming.length ? 'Друзья: заявок ' + incoming.length : 'Друзья: в сети ' + online.length
+    };
   }
 
   renderVals() {
