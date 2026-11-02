@@ -509,7 +509,6 @@ npm run tauri dev
 ```powershell
 $env:TAURI_SIGNING_PRIVATE_KEY = "$env:USERPROFILE\.tauri\signal-launcher.key"
 $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ""
-$env:SIGNAL_GITHUB_REPO = "ваш-логин/signal-launcher"   # откуда брать обновления; без него кнопка скажет «не настроено»
 npm run tauri build
 ```
 
@@ -577,8 +576,9 @@ python scripts/i18n-extract.py --prune  # убрать переводы стро
 
 ## Автообновление лаунчера (`src-tauri/src/updater.rs`)
 
-Официальный `tauri-plugin-updater`. Лаунчер читает `latest.json` последнего выпуска на GitHub
-(`https://github.com/<SIGNAL_GITHUB_REPO>/releases/latest/download/latest.json`), скачивает установщик и
+Официальный `tauri-plugin-updater`. Лаунчер читает `update.json` с сервера Signal
+(`https://signallauncher.mooo.com/update.json`, задан в `updater.rs` и в `tauri.conf.json`; для теста другой
+ленты — переменная `SIGNAL_UPDATE_URL`), скачивает установщик и
 **устанавливает его, только если подпись совпала с публичным ключом** из `tauri.conf.json`
 (`plugins.updater.pubkey`). Включён `requireSignedVersion`: файл должен быть подписан именно для той версии,
 которой он назван, — подменить новый выпуск старым (откат) не выйдет. Проверка, скачивание и установка

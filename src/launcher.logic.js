@@ -3400,7 +3400,7 @@ class Component extends DCLogic {
       .then((info) => {
         this.setUpd({ checking: false, info: info });
         if (!info.configured) {
-          if (!quiet) window.SignalBridge.toast('В этой сборке не задан источник обновлений (SIGNAL_GITHUB_REPO при сборке релиза).', { kind: 'info', title: 'Обновления не настроены' });
+          if (!quiet) window.SignalBridge.toast('В этой сборке не задан адрес обновлений.', { kind: 'info', title: 'Обновления не настроены' });
         } else if (info.available) {
           if (quiet) {
             window.SignalBridge.toast('Сейчас у вас ' + info.current + '.', {

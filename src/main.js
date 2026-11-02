@@ -392,7 +392,7 @@ window.SignalBridge = {
   async checkLauncherUpdate() {
     if (isTauri) return invoke('check_launcher_update');
     await delay(700);
-    return { configured: true, available: true, current: '0.1.0', version: '0.2.0', notes: 'Демо-режим: так будут выглядеть заметки к выпуску из GitHub Releases.\n— Новая вкладка\n— Исправления', date: '2026-10-08' };
+    return { configured: true, available: true, current: '0.1.0', version: '0.2.0', notes: 'Демо-режим: так будут выглядеть заметки к выпуску из update.json.\n— Новая вкладка\n— Исправления', date: '2026-10-08' };
   },
 
   // Download (onProgress({ downloaded, total })), signature check, install; the app restarts.
