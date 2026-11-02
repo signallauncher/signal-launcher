@@ -10,8 +10,9 @@ src-tauri/gen/
 .tauri/
 
 .claude/
+skills-lock.json
 
-website/
+/website/
 __pycache__/
 
 # Packs imported locally (default prefix bb) stay on this machine; the repository keeps only the published cosmetics.
