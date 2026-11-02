@@ -38,7 +38,7 @@ function committedOnly() {
 
 // Settings recommended by Tauri: fixed port, no screen clearing, ignore the Rust folder.
 export default defineConfig({
-  plugins: [committedOnly()],
+  plugins: [],
   clearScreen: false,
   server: {
     port: 1420,
