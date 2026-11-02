@@ -10,7 +10,7 @@ const DEG = Math.PI / 180;
 const GLB_SCALE = 16;
 // Wardrobe slot -> bone socket for a bare url without an attach point. Face items ride on the head so they turn with it.
 const SLOT_SOCKET = { hat: 'head', head: 'head', ears: 'head', face: 'head', pet: 'shoulder_left', shoulders: 'shoulder_left' };
-// Catalog attach points (docs/companion-api.md); each is a socket on the matching joint.
+// Catalog attach points (attach in src/catalog.items.json); each is a socket on the matching joint.
 const ATTACH = ['head', 'body', 'cape', 'shoulder_left', 'arm_left', 'arm_right', 'leg_left', 'leg_right'];
 
 // Box UVs in the 64x64 skin layout. BoxGeometry face order: +x, -x, +y, -y, +z, -z; the player faces +z,
@@ -332,7 +332,7 @@ export class SkinViewer {
     }).catch((e) => console.warn('[skin-viewer] cannot load', key, e));
   }
 
-  // Flipbook strips (material extras sl_frames/sl_fps from entity_geo_to_glb.py): UVs sit on the first frame,
+  // Flipbook strips (material extras sl_frames/sl_fps written by the cosmetics exporter): UVs sit on the first frame,
   // the texture offset steps one frame down the strip. glTF textures are not flipped, so +v goes down the image.
   stepFlipbooks(t) {
     for (const slot in this.attached) {

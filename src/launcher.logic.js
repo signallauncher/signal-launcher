@@ -1,9 +1,9 @@
 // Signal Launcher component logic. Exported from the design canvas.
 import { locale as LOCALE, decimal, plural as pluralize, lang as LANG, LANGS, setLang } from './i18n/index.js';
 import { SkinViewer } from './skin-viewer.js';
-import CATALOG from '../server/catalog.items.json';
+import CATALOG from './catalog.items.json';
 
-// Wardrobe slots in display order with their tab labels (scripts/build-catalog.py SLOTS); a tab shows up once
+// Wardrobe slots in display order with their tab labels (the server's catalog builder uses the same SLOTS); a tab shows up once
 // the catalog has something for it.
 const COS_SLOTS = [
   ['hat', 'Шляпы'], ['head', 'Голова'], ['ears', 'Уши'], ['face', 'Лицо'], ['back', 'Спина'], ['wings', 'Крылья'],
@@ -2652,7 +2652,7 @@ class Component extends DCLogic {
     return out;
   }
 
-  // Wardrobe items per slot, built once from server/catalog.items.json (the source of the published catalog).
+  // Wardrobe items per slot, built once from src/catalog.items.json (the source of the published catalog).
   cosDefs() {
     if (this.cosCache) return this.cosCache;
     const asset = (p) => (p ? '/assets/cosmetics/' + p : null);

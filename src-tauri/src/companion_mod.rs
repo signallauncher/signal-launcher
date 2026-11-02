@@ -1,8 +1,8 @@
 //! Signal Companion mod delivery: before a Fabric game starts, the jar built for its Minecraft version goes
 //! into the installation's `mods/` folder.
 //!
-//! The server publishes `mod/manifest.json` (scripts/build-mod-dist.py): every jar with its sha256, and which jar
-//! each game version loads (the symbol check in mod/tools/symbols.py decides that, snapshots included). Jars are
+//! The server publishes `mod/manifest.json` (built with the mod, outside this repository): every jar with its sha256,
+//! and which jar each game version loads (the mod's symbol check decides that, snapshots included). Jars are
 //! cached once per content hash under `<game dir>/signal-companion/jars/`, checked against the manifest's
 //! sha256 and copied as `mods/signal-companion.jar`. Without network the last manifest is used; a version with
 //! no compatible jar gets none (an older copy is removed so it cannot crash the game). A player who disabled the

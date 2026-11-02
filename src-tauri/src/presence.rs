@@ -1,4 +1,4 @@
-//! Friends' live statuses: one WebSocket to the Signal server (server/src/presence.rs) for the selected profile.
+//! Friends' live statuses: one WebSocket to the Signal server (/v1/presence/ws) for the selected profile.
 //!
 //! The socket reconnects on its own (1 s, 2 s, 4 s … up to a minute), pings every 20 s and reports the
 //! launcher's status: `in_menu`, `playing_singleplayer` while a game runs, `host_lan` once the world is

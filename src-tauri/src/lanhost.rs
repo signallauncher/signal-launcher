@@ -1,4 +1,4 @@
-//! «Открыть для сети» for friends (server/src/relay.rs): the world the game serves on LAN reaches them without
+//! «Открыть для сети» for friends (the Signal server's relay): the world the game serves on LAN reaches them without
 //! a white IP or router settings.
 //!
 //! The game logs `Started serving on <port>` when a world is opened to LAN. The launcher then asks the router

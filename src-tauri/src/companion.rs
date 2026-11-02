@@ -1,4 +1,4 @@
-//! Signal Companion API client (docs/companion-api.md): proves the selected profile and syncs its look.
+//! Signal Companion API client (the Signal server, signal-api): proves the selected profile and syncs its look.
 //!
 //! Microsoft accounts prove themselves through Mojang's session server, the same way the game joins an
 //! online server: the game token goes to Mojang only. Offline profiles get an Ed25519 key on first use.
@@ -291,7 +291,7 @@ pub async fn save_look(app: &AppHandle, profile: ProfileRef, look: Value) -> Res
     Ok(as_profile(app, &profile, true, Method::PUT, "/me/look", Some(json!({ "look": look }))).await?.unwrap_or_default())
 }
 
-/// `{ friends, incoming, outgoing }` (server/src/friends.rs), or `{ unclaimed: true }` for an offline
+/// `{ friends, incoming, outgoing }` (the server's friends API), or `{ unclaimed: true }` for an offline
 /// nickname that never talked to the server: it is claimed by its first friend request.
 pub async fn friends(app: &AppHandle, profile: ProfileRef) -> Result<Value, String> {
     Ok(as_profile(app, &profile, false, Method::GET, "/friends", None).await?.unwrap_or_else(|| json!({ "unclaimed": true })))

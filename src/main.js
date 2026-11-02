@@ -448,7 +448,7 @@ window.SignalBridge = {
     return isTauri ? invoke('list_accounts') : demoMs.accounts.slice();
   },
 
-  // Signal Companion (docs/companion-api.md). profile: { kind: 'ms' | 'offline', id, name }.
+  // Signal Companion (the Signal server's API). profile: { kind: 'ms' | 'offline', id, name }.
   // Both resolve to null in the browser preview: there is no backend to sign the profile in.
   async companionLook(profile) {
     return isTauri ? invoke('companion_look', { profile }) : null;
@@ -458,7 +458,7 @@ window.SignalBridge = {
     return isTauri ? invoke('companion_save_look', { profile, look }) : null;
   },
 
-  // Friends (server/src/friends.rs) of the profile: { friends, incoming, outgoing } or { unclaimed: true }.
+  // Friends (the Signal server's friends API) of the profile: { friends, incoming, outgoing } or { unclaimed: true }.
   // Friends carry { uuid, name, kind, status, detail, since }. The browser preview keeps a demo list.
   async friendsList(profile) {
     if (isTauri) return invoke('friends_list', { profile });
