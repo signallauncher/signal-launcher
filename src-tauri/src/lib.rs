@@ -241,6 +241,15 @@ async fn install_mods(
     mods::install(app, instance_id, name, version, mods).await
 }
 
+/// «Скачать и установить сборку» (AI builder): the loader with all its libraries right away, its build
+/// pinned in `instance.json`. Progress: `mods-progress`, in the last tenth of the bar.
+#[tauri::command]
+async fn install_loader(app: tauri::AppHandle, instance_id: String, version: String) -> Result<Option<String>, String> {
+    let progress = game::Progress::new(app, "mods-progress");
+    progress.set_span(Some((90.0, 99.0)));
+    game::install_loader(&progress, &instance_id, &version).await
+}
+
 #[tauri::command]
 fn list_mods(instance_id: String) -> Vec<mods::ModFile> {
     mods::list(&instance_id)
@@ -755,6 +764,7 @@ pub fn run() {
             generate_ai_modpack,
             open_folder,
             install_mods,
+            install_loader,
             list_mods,
             remove_mod,
             set_mod_enabled,

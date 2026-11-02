@@ -369,6 +369,7 @@ pub async fn launch(app: AppHandle, opts: LaunchOptions) -> Result<LaunchOutcome
     // libraries + natives
     let (mut classpath, native_jars) = ensure_libraries(&client, &progress, &game_dir, &profile).await?;
     classpath.push(jar);
+    check_loader_classpath(&profile, &classpath)?;
     let natives_dir = game_dir.join("versions").join(&profile.id).join("natives");
     if !native_jars.is_empty() {
         progress.step("natives", "Распаковка нативных библиотек…", 40.0);
@@ -441,19 +442,7 @@ pub async fn launch(app: AppHandle, opts: LaunchOptions) -> Result<LaunchOutcome
 
     let mut args: Vec<String> = vec![format!("-Xmx{}G", opts.ram_gb.clamp(1, 64)), "-Xms512M".into()];
     args.extend(opts.extra_jvm_args.iter().cloned());
-    if profile.jvm_args.is_empty() {
-        args.push(substitute("-Djava.library.path=${natives_directory}", &vars));
-        args.push("-cp".into());
-        args.push(vars["classpath"].clone());
-    } else {
-        push_args(&mut args, &profile.jvm_args, &vars);
-    }
-    args.push(profile.main_class.clone());
-    if let Some(legacy) = &profile.legacy_args {
-        args.extend(legacy.split_whitespace().map(|a| substitute(a, &vars)));
-    } else {
-        push_args(&mut args, &profile.game_args, &vars);
-    }
+    args.extend(java_args(&profile, &vars));
     // Join a server on start: 1.20+ has Quick Play, older versions take --server/--port.
     if let Some(server) = opts.server.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
         let quick_play = serde_json::to_string(&profile.game_args).unwrap_or_default().contains("quickPlayMultiplayer");
@@ -533,6 +522,80 @@ pub async fn launch(app: AppHandle, opts: LaunchOptions) -> Result<LaunchOutcome
         pid: Some(pid),
         java_note,
     })
+}
+
+/// Fabric starts from `KnotClient` inside fabric-loader.jar: without it on the classpath the JVM dies with
+/// «Could not find or load main class», so the launch stops here with a readable reason instead.
+fn check_loader_classpath(profile: &Profile, classpath: &[PathBuf]) -> Result<(), String> {
+    if !profile.main_class.starts_with("net.fabricmc.") || find_main_class(classpath, &profile.main_class).is_some() {
+        return Ok(());
+    }
+    Err(format!(
+        "В профиле {} нет библиотеки Fabric Loader с {} — переустановите установку или проверьте целостность файлов.",
+        profile.id, profile.main_class
+    ))
+}
+
+/// Installs the loader of `label` with all its libraries ahead of the first launch and pins the build
+/// in `instance.json` (`loaderVersion`), so the mods picked for it run on exactly that loader.
+/// Returns the loader build (`None` for vanilla).
+pub async fn install_loader(progress: &Progress, instance_id: &str, label: &str) -> Result<Option<String>, String> {
+    let game_dir = minecraft_dir();
+    let client = http_client()?;
+    let pinned = read_json(&instance_dir(instance_id).join("instance.json"))
+        .ok()
+        .and_then(|m| m.get("loaderVersion").and_then(Value::as_str).map(str::to_string));
+    let version_id = prepare_version(&client, progress, &game_dir, label, pinned.as_deref()).await?;
+    ensure_parents(&client, progress, &game_dir, &version_id).await?;
+    let profile = load_profile(&game_dir, &version_id, 0)?;
+    let (classpath, _) = ensure_libraries(&client, progress, &game_dir, &profile).await?;
+    check_loader_classpath(&profile, &classpath)?;
+    let (loader, mc) = parse_label(label);
+    let build = match (loader, mc) {
+        (Loader::Fabric, Some(mc)) => version_id.strip_prefix("fabric-loader-").and_then(|v| v.strip_suffix(&format!("-{mc}"))).map(str::to_string),
+        (Loader::Forge, Some(mc)) => version_id.strip_prefix(&format!("{mc}-forge-")).map(str::to_string),
+        (Loader::NeoForge, _) => version_id.strip_prefix("neoforge-").map(str::to_string),
+        _ => None,
+    };
+    if let Some(build) = &build {
+        update_instance_meta(instance_id, |meta| {
+            meta.insert("loaderVersion".into(), build.clone().into());
+        });
+    }
+    Ok(build)
+}
+
+/// JVM arguments, main class and game arguments of a profile. The classpath always goes in with `-cp`:
+/// a profile chain whose `arguments.jvm` lacks `${classpath}` (another launcher's vanilla JSON under
+/// a Fabric profile) would otherwise start KnotClient without any library and fail with
+/// «Could not find or load main class».
+fn java_args(profile: &Profile, vars: &HashMap<&str, String>) -> Vec<String> {
+    let mut args = Vec::new();
+    push_args(&mut args, &profile.jvm_args, vars);
+    if !args.iter().any(|a| a.starts_with("-Djava.library.path=")) {
+        args.push(substitute("-Djava.library.path=${natives_directory}", vars));
+    }
+    let has_cp = args.windows(2).any(|w| matches!(w[0].as_str(), "-cp" | "-classpath" | "--class-path") && w[1] == vars["classpath"]);
+    if !has_cp {
+        // Drop a `-cp` that points elsewhere, then add the full one.
+        let mut i = 0;
+        while i < args.len() {
+            if matches!(args[i].as_str(), "-cp" | "-classpath" | "--class-path") {
+                args.drain(i..(i + 2).min(args.len()));
+            } else {
+                i += 1;
+            }
+        }
+        args.push("-cp".into());
+        args.push(vars["classpath"].clone());
+    }
+    args.push(profile.main_class.clone());
+    if let Some(legacy) = &profile.legacy_args {
+        args.extend(legacy.split_whitespace().map(|a| substitute(a, vars)));
+    } else {
+        push_args(&mut args, &profile.game_args, vars);
+    }
+    args
 }
 
 /// Waits for the game on a separate thread: adds the session to `playTime`, restores the
@@ -724,10 +787,12 @@ async fn prepare_version(
     label: &str,
     loader_version: Option<&str>,
 ) -> Result<String, String> {
-    if version_json(game_dir, label).is_file() {
+    let (loader, number) = parse_label(label);
+    // A folder named exactly like the label ("Fabric 1.20.1") is another launcher's profile (TLauncher
+    // names them so); modded labels always resolve to this launcher's own loader installs.
+    if loader == Loader::Vanilla && version_json(game_dir, label).is_file() {
         return Ok(label.to_string());
     }
-    let (loader, number) = parse_label(label);
     let mc = number.ok_or_else(|| format!("Не удалось определить версию игры из «{label}»"))?;
     match loader {
         Loader::Vanilla => {
@@ -861,16 +926,18 @@ fn resolve_installed(game_dir: &Path, label: &str) -> Option<String> {
         .filter_map(|e| e.file_name().into_string().ok())
         .filter(|id| version_json(game_dir, id).is_file())
         .collect();
-    if ids.iter().any(|id| id == label) {
+    let (loader, number) = parse_label(label);
+    if loader == Loader::Vanilla && ids.iter().any(|id| id == label) {
         return Some(label.to_string());
     }
     ids.sort_by(|a, b| b.cmp(a)); // newest loader build first
-    let (loader, number) = parse_label(label);
     let number = number?;
     let found = match loader {
+        // By number too: «0.20.1» is newer than «0.9.3».
         Loader::Fabric => ids
             .iter()
-            .find(|id| id.starts_with("fabric-loader-") && id.ends_with(&format!("-{number}"))),
+            .filter(|id| id.starts_with("fabric-loader-") && id.ends_with(&format!("-{number}")))
+            .max_by_key(|id| version_key(id)),
         // Same numbering the installer uses (1.21.1 → neoforge-21.1.x, 26.3 → neoforge-26.3.0.x);
         // the newest build by number, not by string («21.1.256» > «21.1.99»).
         Loader::NeoForge => {
@@ -1047,8 +1114,44 @@ async fn ensure_libraries(
             "Не хватает {missing_local} библиотек, которые создаёт установщик Forge/NeoForge. Переустановите загрузчик."
         ));
     }
+    // Fabric lists fabric-loader and intermediary without a size, so any answer used to count as
+    // downloaded: a jar that is not a zip is fetched again and must come back as one.
+    let no_size: Vec<(PathBuf, String)> = jobs
+        .iter()
+        .filter(|j| j.size.is_none() && j.dest.extension().is_some_and(|e| e == "jar"))
+        .map(|j| (j.dest.clone(), j.url.clone()))
+        .collect();
+    for (dest, _) in &no_size {
+        if dest.is_file() && !jar_ok(dest) {
+            let _ = fs::remove_file(dest);
+        }
+    }
     download_many(client, progress, dedupe(jobs), "libraries", "Скачивание библиотек", 18.0, 40.0).await?;
+    for (dest, url) in &no_size {
+        if !jar_ok(dest) {
+            let _ = fs::remove_file(dest);
+            return Err(format!("{url} скачался повреждённым (не jar). Проверьте соединение и запустите ещё раз."));
+        }
+    }
     Ok((classpath, natives))
+}
+
+fn jar_ok(path: &Path) -> bool {
+    File::open(path).ok().and_then(|f| zip::ZipArchive::new(f).ok()).is_some()
+}
+
+/// The jar of the classpath that holds `main_class`, if any.
+fn find_main_class(classpath: &[PathBuf], main_class: &str) -> Option<PathBuf> {
+    let entry = format!("{}.class", main_class.replace('.', "/"));
+    classpath
+        .iter()
+        .find(|jar| {
+            File::open(jar)
+                .ok()
+                .and_then(|f| zip::ZipArchive::new(f).ok())
+                .is_some_and(|mut z| z.by_name(&entry).is_ok())
+        })
+        .cloned()
 }
 
 fn extract_natives(jars: &[PathBuf], dir: &Path) -> Result<(), String> {
@@ -1988,6 +2091,126 @@ mod tests {
         let mut vars = HashMap::new();
         vars.insert("version_name", "1.21.1".to_string());
         assert_eq!(substitute("--version ${version_name}", &vars), "--version 1.21.1");
+    }
+
+    fn bare_profile(jvm: Value) -> Profile {
+        Profile {
+            id: "fabric-loader-0.20.1-1.20.1".into(),
+            jar_id: "1.20.1".into(),
+            main_class: "net.fabricmc.loader.impl.launch.knot.KnotClient".into(),
+            version_type: "release".into(),
+            asset_index: "5".into(),
+            asset_index_url: None,
+            asset_index_size: None,
+            client_url: None,
+            client_size: None,
+            java_component: None,
+            java_major: None,
+            libraries: Vec::new(),
+            game_args: vec![json!("--username"), json!("${auth_player_name}")],
+            jvm_args: jvm.as_array().cloned().unwrap_or_default(),
+            legacy_args: None,
+        }
+    }
+
+    #[test]
+    fn classpath_always_reaches_java() {
+        let mut vars = HashMap::new();
+        vars.insert("classpath", "a.jar;loader.jar".to_string());
+        vars.insert("natives_directory", "nat".to_string());
+        vars.insert("auth_player_name", "Steve".to_string());
+        // Vanilla JSON: -cp ${classpath} stays as is, once.
+        let vanilla = bare_profile(json!(["-Djava.library.path=${natives_directory}", "-cp", "${classpath}", "-DFabricMcEmu= net.minecraft.client.main.Main "]));
+        let args = java_args(&vanilla, &vars);
+        assert_eq!(args.iter().filter(|a| *a == "-cp").count(), 1);
+        assert_eq!(args.iter().position(|a| a == "-cp").map(|i| args[i + 1].as_str()), Some("a.jar;loader.jar"));
+        // A chain whose jvm arguments forgot the classpath (only Fabric's own line): -cp is added before the main class.
+        let broken = bare_profile(json!(["-DFabricMcEmu= net.minecraft.client.main.Main "]));
+        let args = java_args(&broken, &vars);
+        let main = args.iter().position(|a| a.ends_with("KnotClient")).unwrap();
+        let cp = args.iter().position(|a| a == "-cp").unwrap();
+        assert!(cp < main && args[cp + 1] == "a.jar;loader.jar");
+        assert!(args.contains(&"-Djava.library.path=nat".to_string()));
+        assert_eq!(&args[main + 1..], ["--username", "Steve"]);
+        // A -cp pointing at something else is replaced.
+        let other = bare_profile(json!(["-cp", "only-client.jar"]));
+        let args = java_args(&other, &vars);
+        assert!(!args.contains(&"only-client.jar".to_string()) && args.contains(&"a.jar;loader.jar".to_string()));
+    }
+
+    #[test]
+    fn foreign_profile_named_like_the_label_is_ignored() {
+        let dir = std::env::temp_dir().join(format!("signal-foreign-test-{}", std::process::id()));
+        for id in ["Fabric 1.20.1", "fabric-loader-0.9.3-1.20.1", "fabric-loader-0.20.1-1.20.1"] {
+            let v = dir.join("versions").join(id);
+            fs::create_dir_all(&v).unwrap();
+            fs::write(v.join(format!("{id}.json")), "{}").unwrap();
+        }
+        assert_eq!(resolve_installed(&dir, "Fabric 1.20.1").as_deref(), Some("fabric-loader-0.20.1-1.20.1"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    /// Installs Fabric for 1.20.1 into a fresh folder exactly as the AI builder does at «Скачать и установить» and
+    /// starts KnotClient from the launch classpath: `cargo test --lib live_fabric_knot -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn live_fabric_knot() {
+        let dir = std::env::temp_dir().join(format!("signal-fabric-live-{}", std::process::id()));
+        let progress = Progress::console();
+        let client = http_client().unwrap();
+        let (cp, main) = tauri::async_runtime::block_on(async {
+            let id = prepare_version(&client, &progress, &dir, "Fabric 1.20.1", None).await.unwrap();
+            ensure_parents(&client, &progress, &dir, &id).await.unwrap();
+            let profile = load_profile(&dir, &id, 0).unwrap();
+            let (mut cp, _) = ensure_libraries(&client, &progress, &dir, &profile).await.unwrap();
+            check_loader_classpath(&profile, &cp).unwrap();
+            println!("profile {id}, {} libraries, KnotClient in {:?}", cp.len(), find_main_class(&cp, &profile.main_class));
+            let jar = dir.join("versions").join(&profile.jar_id).join(format!("{}.jar", profile.jar_id));
+            download(&client, profile.client_url.as_deref().unwrap(), &jar, profile.client_size).await.unwrap();
+            cp.push(jar);
+            (cp, profile.main_class)
+        });
+        // Java 17+: Mojang's runtime the launcher already downloaded, else the system one.
+        let java = list_java().into_iter().find(|j| j.major >= 17).expect("no Java 17+").path;
+        // The game really starts (and opens its window), so it is stopped once Fabric has logged its start.
+        let mut child = Command::new(console_java(Path::new(&java)))
+            .arg("-cp")
+            .arg(cp.iter().map(|p| path_str(p)).collect::<Vec<_>>().join(CP_SEPARATOR))
+            .arg(&main)
+            .args(["--version", "1.20.1", "--accessToken", "0", "--gameDir"])
+            .arg(&dir)
+            .current_dir(&dir)
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let (tx, rx) = std::sync::mpsc::channel::<String>();
+        for stream in [Box::new(child.stdout.take().unwrap()) as Box<dyn io::Read + Send>, Box::new(child.stderr.take().unwrap())] {
+            let tx = tx.clone();
+            std::thread::spawn(move || {
+                use std::io::BufRead;
+                for line in io::BufReader::new(stream).lines().map_while(Result::ok) {
+                    let _ = tx.send(line);
+                }
+            });
+        }
+        drop(tx);
+        let mut text = String::new();
+        let deadline = Instant::now() + Duration::from_secs(90);
+        while let Ok(line) = rx.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
+            println!("{line}");
+            text.push_str(&line);
+            text.push('\n');
+            if line.contains("Fabric Loader") || line.contains("Could not find or load main class") {
+                break;
+            }
+        }
+        let _ = child.kill();
+        let _ = child.wait();
+        let _ = fs::remove_dir_all(&dir);
+        assert!(!text.contains("Could not find or load main class"), "KnotClient did not start");
+        assert!(text.contains("with Fabric Loader"), "Fabric Loader did not log its start");
     }
 
     /// Damages one asset of a real installed version, lets the integrity check repair it.

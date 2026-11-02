@@ -2679,7 +2679,7 @@ class Component extends DCLogic {
     return out;
   }
 
-  parsePack(text) {
+  parsePack(text, prompt) {
     if (!text) return null;
     let t = String(text).replace(/```json/gi, '').replace(/```/g, '');
     const a = t.indexOf('{');
@@ -2699,12 +2699,34 @@ class Component extends DCLogic {
     const loader = /neo/i.test(loaderRaw) ? 'NeoForge' : (/forge/i.test(loaderRaw) ? 'Forge' : 'Fabric');
     const vm = String(obj.version || '').match(/\d+\.\d+(\.\d+)?/);
     return {
-      title: String(obj.title || 'Сборка от ИИ').slice(0, 60),
+      title: this.aiPackTitle(obj.title || obj.name, prompt),
       description: String(obj.description || '').slice(0, 240),
       loader: loader,
       version: vm ? vm[0] : '1.21.1',
       mods: mods
     };
+  }
+
+  // The installation's name: the model's title unless it is only a loader and a version
+  // («Fabric 1.20.1»), else the player's own idea («космос и ракеты» → «Космос и ракеты»).
+  aiPackTitle(title, prompt) {
+    const t = String(title || '').replace(/\s+/g, ' ').trim();
+    const technical = /^(сборка|modpack)?\s*(fabric|forge|neoforge|quilt|vanilla|minecraft)?\s*(loader)?\s*[\d.]*$/i.test(t);
+    if (t && !technical) return t.slice(0, 60);
+    const p = String(prompt || '').replace(/\s+/g, ' ').trim().replace(/[.!?…]+$/, '');
+    if (!p) return 'Сборка от ИИ';
+    const short = p.length > 40 ? p.slice(0, 40).replace(/\s+\S*$/, '') + '…' : p;
+    return short.charAt(0).toUpperCase() + short.slice(1);
+  }
+
+  // «Арена без лагов» twice → «Арена без лагов (2)», so installations stay apart in the lists.
+  uniqueInstallName(name) {
+    const taken = new Set((this.state.instances || []).map((i) => String(i.name || '').toLowerCase()));
+    if (!taken.has(name.toLowerCase())) return name;
+    for (let n = 2; ; n++) {
+      const next = name + ' (' + n + ')';
+      if (!taken.has(next.toLowerCase())) return next;
+    }
   }
 
   fallbackPack(prompt) {
@@ -2807,7 +2829,7 @@ class Component extends DCLogic {
     try {
       // Rust command generate_ai_modpack asks the Signal server, which holds the OpenRouter key.
       const text = await window.SignalBridge.generateModpack(prompt);
-      result = this.parsePack(text);
+      result = this.parsePack(text, prompt);
       if (!result) throw new Error('ответ не в формате JSON');
     } catch (e) {
       note = 'ИИ недоступен (' + ((e && e.message) || e) + ') — показан готовый пресет.';
@@ -2846,12 +2868,13 @@ class Component extends DCLogic {
     if (!mods.length) return;
     const id = 'c' + Date.now();
     const name = r.loader + ' ' + r.version;
+    const title = this.uniqueInstallName(r.title);
     this.setState({ dlBusy: true, dlDone: false, dlProgress: 0, dlStage: 'Поиск модов на Modrinth…' });
     const fromCf = mods.filter((mm) => mm.source === 'curseforge' && mm.projectId);
     const fromMr = mods.filter((mm) => !fromCf.includes(mm));
     window.SignalBridge.installMods({
       instanceId: id,
-      instanceName: r.title,
+      instanceName: title,
       version: name,
       mods: fromMr.map((mm) => (mm.projectId ? { name: mm.name, projectId: mm.projectId } : { name: mm.name })),
       onProgress: (p) => this.setState({ dlProgress: Math.max(this.state.dlProgress, p.percent), dlStage: p.label })
@@ -2860,28 +2883,28 @@ class Component extends DCLogic {
         for (const mm of fromCf) {
           this.setState({ dlStage: 'CurseForge: ' + mm.name + '…' });
           try {
-            const cf = await window.SignalBridge.installCurseforge({ instanceId: id, instanceName: r.title, version: name, projectId: mm.projectId, kind: 'mod', title: mm.name });
+            const cf = await window.SignalBridge.installCurseforge({ instanceId: id, instanceName: title, version: name, projectId: mm.projectId, kind: 'mod', title: mm.name });
             report.installed = report.installed.concat((cf && cf.installed) || []);
             report.skipped = report.skipped.concat((cf && cf.skipped) || []);
           } catch (e) {
             report.skipped.push({ name: mm.name, reason: String(e) });
           }
         }
+        // The loader and its libraries now, not at the first «Играть»: its build is pinned for these mods,
+        // and a broken loader shows up here instead of as a crash on start.
+        this.setState({ dlStage: r.loader + ' ' + r.version + ': установка загрузчика…' });
+        report.loaderVersion = await window.SignalBridge.installLoader({
+          instanceId: id,
+          version: name,
+          onProgress: (p) => this.setState({ dlProgress: Math.max(this.state.dlProgress, p.percent), dlStage: p.label })
+        });
         return report;
       })
       .then((report) => {
         const n = report.installed.length;
         const deps = report.installed.filter((x) => x.dependency).length;
-        const inst = {
-          id: id,
-          name: name,
-          sub: r.loader + ' · ' + n + ' ' + this.plural(n, 'мод', 'мода', 'модов') + ' · собрано ИИ',
-          loader: r.loader === 'Fabric' ? 'fabric' : 'forge',
-          install: r.title,
-          last: 'ещё не запускалась'
-        };
-        this.addInstance({ id: id, name: r.title, version: name, mods: n });
-        this.setState({ dlBusy: false, dlDone: true, dlProgress: 100, dlStage: 'Готово', versionId: inst.id });
+        this.addInstance({ id: id, name: title, version: name, mods: n, loaderVersion: report.loaderVersion || null });
+        this.setState({ dlBusy: false, dlDone: true, dlProgress: 100, dlStage: 'Готово', versionId: id });
         this.loadInstances(false);
         this.refreshMods(id);
         this.play('done');
@@ -2892,7 +2915,7 @@ class Component extends DCLogic {
             'Сборка выбрана в панели запуска.',
             skipped.length ? 'Пропущено: ' + skipped.join('; ') + '.' : ''
           ].filter(Boolean).join(' '),
-          { kind: skipped.length ? 'info' : 'success', title: 'Сборка «' + r.title + '» установлена', timeout: skipped.length ? 12000 : 6000, notify: true, target: { tab: 'installs', instanceId: id } }
+          { kind: skipped.length ? 'info' : 'success', title: 'Сборка «' + title + '» установлена', timeout: skipped.length ? 12000 : 6000, notify: true, target: { tab: 'installs', instanceId: id } }
         );
       })
       .catch((e) => {
@@ -4032,6 +4055,10 @@ class Component extends DCLogic {
     const cur = accounts.find((a) => a.active) || accounts[0];
 
     const versions = vers.map((v) => Object.assign({}, v, {
+      // An installation shows its own name («Арена без лагов»), the game version goes under it;
+      // the built-in «Последний релиз/снапшот» keep the version as the title.
+      title: v.onDisk && v.install ? v.install : v.name,
+      titleSub: v.onDisk && v.install ? v.name + ' · ' + v.sub : v.sub,
       hasIcon: !!v.icon,
       iconSrc: v.icon ? window.SignalBridge.fileSrc(v.icon) : '',
       isVanilla: !v.icon && v.loader === 'vanilla',

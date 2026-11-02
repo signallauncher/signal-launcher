@@ -247,6 +247,25 @@ window.SignalBridge = {
     }
   },
 
+  /**
+   * The installation's loader (Fabric/Forge/NeoForge) with its libraries, its build pinned in instance.json.
+   * Progress arrives as `mods-progress` events. @returns {Promise<string|null>} the loader build
+   */
+  async installLoader({ instanceId, version, onProgress }) {
+    if (!isTauri) {
+      if (onProgress) onProgress({ label: 'Установка загрузчика…', percent: 95 });
+      await delay(300);
+      return null;
+    }
+    let unlisten = null;
+    try {
+      if (onProgress) unlisten = await listen('mods-progress', (event) => onProgress(event.payload));
+      return await invoke('install_loader', { instanceId, version });
+    } finally {
+      if (unlisten) unlisten();
+    }
+  },
+
   // Files in the installation's mods folder: [{ file, size, enabled }].
   async listMods(instanceId) {
     if (isTauri) return invoke('list_mods', { instanceId });
