@@ -13,3 +13,7 @@ src-tauri/gen/
 
 website/
 __pycache__/
+
+# Packs imported locally (default prefix bb) stay on this machine; the repository keeps only the published cosmetics.
+public/assets/cosmetics/models/bb_*
+public/assets/cosmetics/icons/bb_*
