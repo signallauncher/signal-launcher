@@ -555,6 +555,7 @@ fn watch_game(
         let code = child.wait().ok().and_then(|status| status.code());
         if crate::gamedir::RUNNING_GAMES.fetch_sub(1, std::sync::atomic::Ordering::SeqCst) == 1 {
             crate::presence::in_menu();
+            crate::lanhost::game_exited();
         }
         // Everything the game printed is read and sent before the exit is announced.
         let session = console.finish();

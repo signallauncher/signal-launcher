@@ -204,6 +204,10 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 .fr-text{font-size:12px;color:#8A94A3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fr-off{height:16px;padding:0 5px;border-radius:4px;display:inline-flex;align-items:center;background:rgba(224,164,58,0.14);color:#F0B95A;font-size:9px;font-weight:700;letter-spacing:.06em}
 .fr-req{background:rgba(91,208,122,0.06)}
+.fr-join{align-self:flex-start;margin-top:4px;display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 10px;border-radius:9px;border:1px solid rgba(180,140,255,0.4);background:rgba(180,140,255,0.14);color:#E2D6FF;font:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s}
+.fr-join:hover{background:rgba(180,140,255,0.26);border-color:rgba(180,140,255,0.6)}
+.fr-join:focus-visible{outline:2px solid #B48CFF;outline-offset:2px}
+.fr-host{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:rgba(180,140,255,0.08);border:1px solid rgba(180,140,255,0.28)}
 .fr-badge{position:absolute;top:9px;right:8px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:#2A8040;color:#FFFFFF;font-size:11px;font-weight:700;box-shadow:0 0 0 2px #10151C}
 .fr-badge.is-req{background:#D9822B}
 .fr-spin{flex:none;width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,0.15);border-top-color:#5BD07A;animation:spin .8s linear infinite}
@@ -354,6 +358,16 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 <button class="ghost icon-btn" aria-label="Закрыть" data-sfx="close" onClick="{{closeFriends}}" style="min-height: 38px; width: 38px; border-radius: 11px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
 </div>
 
+<sc-if value="{{fr.hosting}}" hint-placeholder-val="{{false}}">
+<div class="fr-host">
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<span style="font-weight: 600; font-size: 13px; color: #CDB8FF">{{fr.hostWorld}} открыт для друзей</span>
+<span style="font-size: 12px; color: #A3ADBB; white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><span style="font-family: 'JetBrains Mono', monospace; color: #ECEFF3">{{fr.hostJoin}}</span> · {{fr.hostVia}}</span>
+</span>
+<button class="ghost" onClick="{{fr.copyHost}}" style="min-height: 34px; padding: 0 12px; font-size: 12px">Копировать</button>
+</div>
+</sc-if>
+
 <sc-if value="{{fr.noProfile}}" hint-placeholder-val="{{false}}">
 <div class="fr-note">Друзья привязаны к нику. У офлайн-аккаунта «Player» его нет: добавьте аккаунт со своим ником или войдите через Microsoft.</div>
 </sc-if>
@@ -403,7 +417,9 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 <span class="fr-face"><span style="display: block; width: 4px; height: 4px; background: {{f.bg}}; box-shadow: {{f.sh}}"></span></span>
 <span class="fr-dot" style="background: {{f.dot}}"></span>
 </span>
-<span class="fr-who"><span class="fr-name">{{f.name}}<sc-if value="{{f.isOffline}}" hint-placeholder-val="{{false}}"><span class="fr-off">OFFLINE</span></sc-if></span><span class="fr-text" style="color: {{f.textColor}}">{{f.detail}}</span></span>
+<span class="fr-who"><span class="fr-name">{{f.name}}<sc-if value="{{f.isOffline}}" hint-placeholder-val="{{false}}"><span class="fr-off">OFFLINE</span></sc-if></span><span class="fr-text" style="color: {{f.textColor}}">{{f.detail}}</span>
+<sc-if value="{{f.canJoin}}" hint-placeholder-val="{{false}}"><button class="fr-join" title="{{f.joinTitle}}" data-sfx="open" onClick="{{f.join}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 7l5 5-5 5"></path><path d="M4 12h11"></path><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"></path></svg>Подключиться к миру</button></sc-if>
+</span>
 <button class="{{f.delCls}}" aria-label="Удалить {{f.name}} из друзей" title="Удалить из друзей" disabled="{{f.busy}}" onClick="{{f.del}}">
 <sc-if value="{{f.delIdle}}" hint-placeholder-val="{{true}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></sc-if>
 <sc-if value="{{f.delConfirm}}" hint-placeholder-val="{{false}}"><span>Удалить?</span></sc-if>

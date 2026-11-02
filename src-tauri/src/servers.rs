@@ -333,9 +333,61 @@ pub fn saved() -> Vec<SavedServer> {
     out
 }
 
+/// Puts a server at the top of the multiplayer list in `dir` (a friend's world); an address already there
+/// stays where it is. The game reads `servers.dat` each time the list opens.
+pub fn add(dir: &std::path::Path, name: &str, address: &str) -> Result<(), String> {
+    use fastnbt::Value as Nbt;
+    let path = dir.join("servers.dat");
+    let mut top = match std::fs::read(&path).ok().and_then(|b| fastnbt::from_bytes::<Nbt>(&b).ok()) {
+        Some(Nbt::Compound(c)) => c,
+        _ => Default::default(),
+    };
+    let mut list = match top.remove("servers") {
+        Some(Nbt::List(l)) => l,
+        _ => Vec::new(),
+    };
+    let known = list.iter().any(|e| match e {
+        Nbt::Compound(s) => matches!(s.get("ip"), Some(Nbt::String(ip)) if ip.eq_ignore_ascii_case(address)),
+        _ => false,
+    });
+    if !known {
+        let mut entry = std::collections::HashMap::new();
+        entry.insert("name".to_string(), Nbt::String(name.to_string()));
+        entry.insert("ip".to_string(), Nbt::String(address.to_string()));
+        list.insert(0, Nbt::Compound(entry));
+    }
+    top.insert("servers".to_string(), Nbt::List(list));
+    let bytes = fastnbt::to_bytes(&Nbt::Compound(top)).map_err(|e| format!("servers.dat: {e}"))?;
+    std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    std::fs::write(&path, bytes).map_err(|e| format!("{}: {e}", path.display()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn adds_a_friends_world_once() {
+        let dir = std::env::temp_dir().join(format!("signal-servers-{}", std::process::id()));
+        add(&dir, "Kira: Новый мир", "signallauncher.mooo.com:25601").unwrap();
+        add(&dir, "Kira: Новый мир", "signallauncher.mooo.com:25601").unwrap();
+        add(&dir, "Mira", "87.120.1.2:51234").unwrap();
+        let nbt: fastnbt::Value = fastnbt::from_bytes(&std::fs::read(dir.join("servers.dat")).unwrap()).unwrap();
+        let fastnbt::Value::Compound(top) = nbt else { panic!() };
+        let Some(fastnbt::Value::List(list)) = top.get("servers") else { panic!() };
+        let ips: Vec<_> = list
+            .iter()
+            .filter_map(|e| match e {
+                fastnbt::Value::Compound(s) => match s.get("ip") {
+                    Some(fastnbt::Value::String(ip)) => Some(ip.as_str()),
+                    _ => None,
+                },
+                _ => None,
+            })
+            .collect();
+        assert_eq!(ips, ["87.120.1.2:51234", "signallauncher.mooo.com:25601"]);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn varints_round_trip() {

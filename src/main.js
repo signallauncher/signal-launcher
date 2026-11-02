@@ -99,7 +99,7 @@ const demoFriends = (() => {
   const p = (name, kind) => ({ uuid: 'demo-' + name.toLowerCase(), name, kind: kind || 'mojang' });
   let friends = [
     Object.assign(p('Kira_Redstone'), { status: 'playing_singleplayer', detail: 'Fabric 1.21.1', since: ago(34) }),
-    Object.assign(p('Mira_Snow'), { status: 'hosting_p2p', detail: 'Release 1.21.9', since: ago(8) }),
+    Object.assign(p('Mira_Snow'), { status: 'hosting_p2p', detail: 'Release 1.21.9', since: ago(8), world: 'Остров', join: 'signallauncher.mooo.com:25601', via: 'relay' }),
     Object.assign(p('Steve_Builds', 'offline'), { status: 'in_menu', detail: null, since: ago(3) }),
     Object.assign(p('OldMiner'), { status: 'offline', detail: null, since: null })
   ];
@@ -465,6 +465,13 @@ window.SignalBridge = {
     if (isTauri) return invoke('friends_remove', { profile, uuid });
     await delay(200);
     demoFriends.remove(uuid);
+  },
+
+  // «Подключиться к миру»: the friend's world goes to the multiplayer list of these installations → count.
+  async addFriendServer(instanceIds, name, address) {
+    if (isTauri) return invoke('add_friend_server', { instanceIds, name, address });
+    await delay(150);
+    return instanceIds.length;
   },
 
   // The presence socket (src-tauri/src/presence.rs) for the profile; null closes it.

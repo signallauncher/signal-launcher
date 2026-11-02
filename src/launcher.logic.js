@@ -234,6 +234,8 @@ class Component extends DCLogic {
       frFaces: {},
       // the presence socket: { state: off | connecting | online | reconnecting | unclaimed, retryIn?, error? }
       presence: { state: 'off' },
+      // our own world opened to friends: { join, via, world } or { error } from the server, null otherwise
+      myHost: null,
       nickFriend: '',
       friendMsg: '',
       friendMsgOk: true,
@@ -403,6 +405,7 @@ class Component extends DCLogic {
     if (this.state.opts.autoUpdate) this.updTimer = setTimeout(() => this.checkLauncherUpdate(true), 4000);
     window.SignalBridge.integrations().then((v) => { if (v) this.setState({ integrations: v }); }).catch(() => {});
     window.SignalBridge.onGameExit((e) => {
+      if (Object.keys(this.state.running || {}).length <= 1) this.setState({ myHost: null });
       const running = Object.assign({}, this.state.running);
       delete running[e.instanceId];
       this.setState({ running: running });
@@ -801,10 +804,41 @@ class Component extends DCLogic {
       this.frTimer = setTimeout(() => this.loadFriends(), ev.type === 'hello' ? 0 : 250);
       return;
     }
+    if (ev.type === 'hosting') { this.onHosting(ev); return; }
     const fr = this.state.fr;
     if (ev.type !== 'presence' || !fr || !fr.friends.some((f) => f.uuid === ev.uuid)) return;
-    const seen = { status: ev.status, detail: ev.detail || null, since: ev.since || null };
+    const seen = { status: ev.status, detail: ev.detail || null, since: ev.since || null, world: ev.world || null, join: ev.join || null, via: ev.via || null };
     this.setState({ fr: Object.assign({}, fr, { friends: fr.friends.map((f) => (f.uuid === ev.uuid ? Object.assign({}, f, seen) : f)) }) });
+  }
+
+  // The server's answer to our world opened to LAN: the address friends get, or why there is none.
+  onHosting(ev) {
+    const was = this.state.myHost;
+    this.setState({ myHost: ev });
+    if (ev.error) {
+      window.SignalBridge.toast(ev.error, { kind: 'error', title: 'Мир не открыт для друзей', notify: true });
+      return;
+    }
+    if (was && was.join === ev.join) return;
+    const how = ev.via === 'direct' ? 'напрямую через роутер (UPnP)' : 'через сервер Signal';
+    this.play('done');
+    window.SignalBridge.toast('Друзья увидят кнопку «Подключиться к миру». Адрес ' + ev.join + ', ' + how + '.', { kind: 'success', title: 'Мир открыт для друзей' });
+  }
+
+  // «Подключиться к миру»: the address goes to the clipboard and, while a game runs, to its multiplayer list.
+  joinFriend(f) {
+    if (!f.join) return;
+    try { if (navigator.clipboard) navigator.clipboard.writeText(f.join).catch(() => {}); } catch (e) {}
+    const running = Object.keys(this.state.running || {});
+    const name = f.name + (f.world ? ': ' + f.world : '');
+    const version = f.detail ? ' Нужна та же версия игры: ' + f.detail + '.' : '';
+    if (!running.length) {
+      window.SignalBridge.toast('Адрес ' + f.join + ' скопирован. Запустите игру и вставьте его в «Сетевая игра → Прямое подключение».' + version, { kind: 'success', title: 'Мир ' + f.name });
+      return;
+    }
+    window.SignalBridge.addFriendServer(running, name, f.join)
+      .then(() => window.SignalBridge.toast('«' + name + '» добавлен в «Сетевую игру» (откройте список заново). Адрес ' + f.join + ' тоже скопирован.' + version, { kind: 'success', title: 'Мир ' + f.name }))
+      .catch((e) => window.SignalBridge.toast('Адрес ' + f.join + ' скопирован, но список серверов не обновился: ' + e, { kind: 'info', title: 'Мир ' + f.name }));
   }
 
   sendFriendRequest() {
@@ -3881,7 +3915,7 @@ class Component extends DCLogic {
     const fr = s.fr || { friends: [], incoming: [], outgoing: [] };
     const looks = {
       playing_singleplayer: { dot: '#5BD07A', text: '#86DDA0', label: 'Играет', order: 0 },
-      hosting_p2p: { dot: '#B48CFF', text: '#CDB8FF', label: 'Открыл мир для друзей', order: 0 },
+      hosting_p2p: { dot: '#B48CFF', text: '#CDB8FF', label: 'Открыл мир', order: 0 },
       in_menu: { dot: '#4FA3FF', text: '#8EC2FF', label: 'В лаунчере', order: 1 },
       offline: { dot: '#5D6672', text: '#8A94A3', label: 'Не в сети', order: 2 }
     };
@@ -3905,10 +3939,15 @@ class Component extends DCLogic {
       .map((f) => {
         const on = f.status !== 'offline';
         const time = f.status !== 'in_menu' && f.since ? ago(f.since) : '';
+        const hosting = f.status === 'hosting_p2p';
+        const label = hosting && f.world ? f.look.label + ' «' + f.world + '»' : f.look.label;
         return Object.assign(person(f), {
           on: on,
           dot: f.look.dot, textColor: f.look.text, fade: on ? 1 : 0.55,
-          detail: [f.look.label, on ? f.detail : '', on ? time : ''].filter(Boolean).join(' · '),
+          detail: [label, on ? f.detail : '', on ? time : ''].filter(Boolean).join(' · '),
+          canJoin: hosting && !!f.join,
+          joinTitle: f.join ? f.join + (f.via === 'direct' ? ' · напрямую' : ' · через сервер Signal') : '',
+          join: () => this.joinFriend(f),
           delCls: s.frDel === f.uuid ? 'acc-del is-confirm' : 'acc-del',
           delConfirm: s.frDel === f.uuid,
           delIdle: s.frDel !== f.uuid,
@@ -3954,6 +3993,14 @@ class Component extends DCLogic {
       retry: () => { this.setState({ frErr: '' }); this.loadFriends(); },
       empty: !!profile && loaded && !s.frUnclaimed && !friends.length && !incoming.length && !outgoing.length,
       myName: profile ? profile.name : '',
+      hosting: !!(s.myHost && s.myHost.join),
+      hostWorld: s.myHost && s.myHost.world ? '«' + s.myHost.world + '»' : 'Ваш мир',
+      hostJoin: s.myHost ? s.myHost.join || '' : '',
+      hostVia: s.myHost && s.myHost.via === 'direct' ? 'напрямую через роутер (UPnP)' : 'через сервер Signal',
+      copyHost: () => {
+        try { if (navigator.clipboard && s.myHost) navigator.clipboard.writeText(s.myHost.join).catch(() => {}); } catch (e) {}
+        window.SignalBridge.toast(s.myHost ? s.myHost.join : '', { kind: 'success', title: 'Адрес скопирован', timeout: 2500 });
+      },
       adding: s.frBusy === 'add',
       addLabel: s.frBusy === 'add' ? 'Отправка…' : 'Добавить',
       // header badge: requests first, else friends online

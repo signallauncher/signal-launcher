@@ -1,9 +1,11 @@
 //! Friends' live statuses: one WebSocket to the Signal server (server/src/presence.rs) for the selected profile.
 //!
 //! The socket reconnects on its own (1 s, 2 s, 4 s … up to a minute), pings every 20 s and reports the
-//! launcher's status: `in_menu`, `playing_singleplayer` while a game runs. The UI gets two events:
+//! launcher's status: `in_menu`, `playing_singleplayer` while a game runs, `host_lan` once the world is
+//! opened to LAN (lanhost.rs). The UI gets two events:
 //! `presence-state` (`{ state: connecting | online | reconnecting | unclaimed | off, retryIn?, error? }`)
-//! and `presence-event` (what the server sent: `hello`, `presence`, `friends_changed`).
+//! and `presence-event` (what the server sent: `hello`, `presence`, `friends_changed`, `hosting`).
+//! `relay_open` stays here: it becomes a data connection to the relay (`lanhost::pipe`).
 use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
@@ -22,16 +24,35 @@ const SILENT_LIMIT: Duration = Duration::from_secs(55);
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 const BACKOFF_MAX_S: u64 = 60;
 
-/// What the launcher is doing: the status and a short note (the game version).
+/// What the launcher is doing: the status, a short note (the game version) and the world opened to LAN.
 #[derive(Debug, Clone, PartialEq)]
 struct Local {
     status: &'static str,
     detail: Option<String>,
+    host: Option<Host>,
+}
+
+/// A world open to LAN: the game's local port, the level's name and the UPnP address, if the router gave one.
+#[derive(Debug, Clone, PartialEq)]
+struct Host {
+    port: u16,
+    world: Option<String>,
+    direct: Option<String>,
+}
+
+impl Local {
+    fn message(&self) -> String {
+        match &self.host {
+            Some(h) => json!({ "type": "host_lan", "port": h.port, "world": h.world, "direct": h.direct }),
+            None => json!({ "type": "status", "status": self.status, "detail": self.detail }),
+        }
+        .to_string()
+    }
 }
 
 fn local() -> &'static watch::Sender<Local> {
     static LOCAL: OnceLock<watch::Sender<Local>> = OnceLock::new();
-    LOCAL.get_or_init(|| watch::Sender::new(Local { status: "in_menu", detail: None }))
+    LOCAL.get_or_init(|| watch::Sender::new(Local { status: "in_menu", detail: None, host: None }))
 }
 
 /// The running connection: the profile's UUID and its task.
@@ -39,12 +60,20 @@ static RUNNING: Mutex<Option<(String, tauri::async_runtime::JoinHandle<()>)>> = 
 
 /// A game started (`detail`: «Fabric 1.21.1»).
 pub fn playing(detail: &str) {
-    local().send_replace(Local { status: "playing_singleplayer", detail: Some(detail.to_string()) });
+    local().send_replace(Local { status: "playing_singleplayer", detail: Some(detail.to_string()), host: None });
+}
+
+/// The running game opened its world to LAN on `port`.
+pub fn host(port: u16, world: Option<String>, direct: Option<String>) {
+    local().send_modify(|l| {
+        l.status = "hosting_p2p";
+        l.host = Some(Host { port, world, direct });
+    });
 }
 
 /// The last running game exited.
 pub fn in_menu() {
-    local().send_replace(Local { status: "in_menu", detail: None });
+    local().send_replace(Local { status: "in_menu", detail: None, host: None });
 }
 
 /// Connects as the profile; does nothing when that profile is already connected.
@@ -166,8 +195,11 @@ async fn session(app: &AppHandle, token: &str) -> Ended {
                 heard = Instant::now();
                 match msg {
                     Message::Text(text) => {
-                        if let Ok(event) = serde_json::from_str::<Value>(&text) {
-                            if event["type"] != "pong" {
+                        let Ok(event) = serde_json::from_str::<Value>(&text) else { continue };
+                        match event["type"].as_str() {
+                            Some("pong") => {}
+                            Some("relay_open") => relay_open(&event),
+                            _ => {
                                 let _ = app.emit("presence-event", event);
                             }
                         }
@@ -180,8 +212,7 @@ async fn session(app: &AppHandle, token: &str) -> Ended {
                 if changed.is_err() {
                     return end("stopped");
                 }
-                let now = status.borrow_and_update().clone();
-                let msg = json!({ "type": "status", "status": now.status, "detail": now.detail }).to_string();
+                let msg = status.borrow_and_update().message();
                 if let Err(e) = ws.send(Message::text(msg)).await {
                     return end(&format!("Не удалось отправить статус: {e}"));
                 }
@@ -198,8 +229,30 @@ async fn session(app: &AppHandle, token: &str) -> Ended {
     }
 }
 
+/// A player reached the relay: open the data connection for them, to the Signal server only.
+fn relay_open(event: &Value) {
+    let (Some(id), Some(connect)) = (event["id"].as_str(), event["connect"].as_str()) else { return };
+    let Some(port) = local().borrow().host.as_ref().map(|h| h.port) else { return };
+    let api = companion::api();
+    let server = api.split("://").nth(1).and_then(|r| r.split(['/', ':']).next()).unwrap_or_default();
+    if connect.rsplit_once(':').map(|(h, _)| h) != Some(server) {
+        println!("[signal] relay_open to a foreign host {connect} ignored");
+        return;
+    }
+    tauri::async_runtime::spawn(crate::lanhost::pipe(connect.to_string(), id.to_string(), port));
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn status_or_world() {
+        let l = super::Local { status: "playing_singleplayer", detail: Some("Fabric 1.21.1".into()), host: None };
+        assert_eq!(l.message(), r#"{"detail":"Fabric 1.21.1","status":"playing_singleplayer","type":"status"}"#);
+        let host = super::Host { port: 51234, world: Some("New World".into()), direct: None };
+        let l = super::Local { status: "hosting_p2p", host: Some(host), ..l };
+        assert_eq!(l.message(), r#"{"direct":null,"port":51234,"type":"host_lan","world":"New World"}"#);
+    }
+
     #[test]
     fn socket_address_follows_the_api() {
         std::env::set_var("SIGNAL_SERVER", "http://127.0.0.1:3000/");

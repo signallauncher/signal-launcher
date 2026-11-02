@@ -8,6 +8,7 @@ mod export;
 mod game;
 mod gamedir;
 mod instances;
+mod lanhost;
 mod loaders;
 mod modrinth;
 mod mods;
@@ -401,6 +402,19 @@ async fn ping_server(address: String) -> servers::ServerStatus {
     servers::ping(&address).await
 }
 
+/// «Подключиться к миру»: a friend's world goes to the multiplayer list of the running installations.
+#[tauri::command]
+async fn add_friend_server(instance_ids: Vec<String>, name: String, address: String) -> Result<usize, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        for id in &instance_ids {
+            servers::add(&game::instance_dir(id), &name, &address)?;
+        }
+        Ok(instance_ids.len())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Servers added in game (`servers.dat` of the shared folder and every installation).
 #[tauri::command]
 async fn saved_servers() -> Result<Vec<servers::SavedServer>, String> {
@@ -782,6 +796,7 @@ pub fn run() {
             install_launcher_update,
             ping_server,
             saved_servers,
+            add_friend_server,
             news_feed,
             news_article,
             open_link,

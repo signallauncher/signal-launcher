@@ -3,6 +3,20 @@
 // "patterns": {1}, {2}… stand for the dynamic parts of composed messages.
 export default {
  "exact": {
+  "Подключиться к миру": "Join the world",
+  "Открыл мир": "Hosting a world",
+  "Адрес скопирован": "Address copied",
+  "Мир открыт для друзей": "World opened to friends",
+  "Мир не открыт для друзей": "World not opened to friends",
+  "Ваш мир": "Your world",
+  "{{fr.hostWorld}} открыт для друзей": "{{fr.hostWorld}} is open to friends",
+  "напрямую через роутер (UPnP)": "directly through the router (UPnP)",
+  "через сервер Signal": "through the Signal server",
+  " · напрямую": " · direct",
+  " · через сервер Signal": " · through the Signal server",
+  "Неверный порт мира": "Invalid world port",
+  "Все порты ретранслятора заняты, попробуйте позже": "All relay ports are busy, try again later",
+  "Ретранслятор Signal выключен, а роутер не пробросил порт": "The Signal relay is off and the router did not forward the port",
   "Кнопка друзей": "Friends button",
   "В сети": "Online",
   "В лаунчере": "In the launcher",
@@ -1457,6 +1471,34 @@ export default {
   "Косметика и значки Signal в игре (Fabric): мод ставится в установку при запуске, без него — убирается": "Signal cosmetics and badges in game (Fabric): the mod is added to the installation at launch, and removed when this is off"
  },
  "patterns": [
+  [
+   "Мир {1}",
+   "{1}'s world"
+  ],
+  [
+   "Открыл мир «{1}»",
+   "Hosting «{1}»"
+  ],
+  [
+   "Друзья увидят кнопку «Подключиться к миру». Адрес {1}, {2}.",
+   "Friends will see a «Join the world» button. Address {1}, {2}."
+  ],
+  [
+   "Адрес {1} скопирован. Запустите игру и вставьте его в «Сетевая игра → Прямое подключение».{2}",
+   "Address {1} copied. Start the game and paste it into «Multiplayer → Direct Connection».{2}"
+  ],
+  [
+   "«{1}» добавлен в «Сетевую игру» (откройте список заново). Адрес {2} тоже скопирован.{3}",
+   "«{1}» was added to Multiplayer (reopen the list). The address {2} is copied too.{3}"
+  ],
+  [
+   "Адрес {1} скопирован, но список серверов не обновился: {2}",
+   "Address {1} copied, but the server list was not updated: {2}"
+  ],
+  [
+   " Нужна та же версия игры: {1}.",
+   " The same game version is needed: {1}."
+  ],
   [
    "{1} теперь у вас в друзьях",
    "{1} is now your friend"

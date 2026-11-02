@@ -167,6 +167,7 @@ pub fn attach(
             std::thread::spawn(move || {
                 // Split on bytes: game output is not always valid UTF-8.
                 for line in BufReader::new(stream).split(b'\n').map_while(Result::ok) {
+                    crate::lanhost::scan(&line);
                     session.push(&line, err);
                 }
             })
