@@ -14,7 +14,7 @@ use std::path::{Path, PathBuf};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
-const SERVER: &str = "https://signallauncher.h4ck.me";
+const SERVER: &str = "https://signallauncher.mooo.com";
 const MANIFEST: &str = "/mod/manifest.json";
 pub const JAR_NAME: &str = "signal-companion.jar";
 
@@ -52,6 +52,12 @@ pub async fn install(client: &reqwest::Client, instance: &Path, game_version: &s
     }
     remove_ours(&mods, Some(&dest));
     Ok(Some(target.to_string()))
+}
+
+/// The player turned the mod off in the launcher settings: no copy of it stays in `mods/`.
+/// A jar the player disabled by hand (`.jar.disabled`) is not a `.jar` and stays.
+pub fn remove(instance: &Path) {
+    remove_ours(&instance.join("mods"), None);
 }
 
 /// The manifest from the server (saved for offline starts), else the saved one.
@@ -130,7 +136,7 @@ mod tests {
         fs::create_dir_all(instance.join("mods")).unwrap();
         fs::write(instance.join("mods").join("signal_companion-0.0.1+old.jar"), b"stale").unwrap();
         let client = crate::game::http_client().unwrap();
-        for (mc, expected) in [("1.21.1", Some("g21")), ("1.14.4", Some("g14")), ("26.3", Some("g263")), ("26.4-snapshot-4", None)] {
+        for (mc, expected) in [("1.21.1", Some("g21")), ("1.14.4", Some("g14")), ("26.3", Some("g263")), ("26.4-snapshot-4", Some("g264"))] {
             let got = tauri::async_runtime::block_on(install(&client, &instance, mc)).unwrap();
             let jar = instance.join("mods").join(JAR_NAME);
             println!("{mc}: {got:?}, {} bytes", fs::metadata(&jar).map(|m| m.len()).unwrap_or(0));

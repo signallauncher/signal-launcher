@@ -141,7 +141,7 @@ window.SignalBridge = {
    * The button switches to «ЗАГРУЗКА… / ЗАПУСК…» and plays the launch sound (launch() in launcher.logic.js).
    * @returns {Promise<{ mode: string, title: string, message: string }>}
    */
-  async launchMinecraft({ version, instanceId, instanceName, username, accountId, ramGb, jvmArgs, priority, hideLauncher, backup, discord, server, skin, javaPath, openConsole, onProgress }) {
+  async launchMinecraft({ version, instanceId, instanceName, username, accountId, ramGb, jvmArgs, priority, hideLauncher, backup, discord, server, skin, javaPath, companion, openConsole, onProgress }) {
     const pending = toast(`Подготовка игровых файлов версии ${version}…`, { kind: 'loading', title: `Запуск ${version}`, timeout: 0 });
     const report = (p) => {
       pending.update({ kind: 'loading', title: `Запуск ${version} · ${p.percent}%`, message: p.label, timeout: 0 });
@@ -154,7 +154,7 @@ window.SignalBridge = {
       let result;
       if (isTauri) {
         unlisten = await listen('download-progress', (event) => report(event.payload));
-        result = await invoke('launch_minecraft', { version, instanceId, instanceName, username, accountId, ramGb, jvmArgs, priority, hideLauncher, backup, discord, server, skin, javaPath: javaPath || null });
+        result = await invoke('launch_minecraft', { version, instanceId, instanceName, username, accountId, ramGb, jvmArgs, priority, hideLauncher, backup, discord, server, skin, javaPath: javaPath || null, companion: companion !== false });
       } else {
         // Browser preview: replay the stages the desktop app reports.
         for (const [label, percent] of [
@@ -664,6 +664,20 @@ window.SignalBridge = {
     return null;
   },
 
+  /** Settings → Интерфейс: the layout saved in settings.json, or null. */
+  async uiLayout() {
+    return isTauri ? invoke('ui_layout') : null;
+  },
+
+  async saveUiLayout(layout) {
+    if (isTauri) return invoke('set_ui_layout', { layout });
+  },
+
+  /** Opens the connections a nickname lookup needs, ahead of the first one. */
+  async warmSkinLookup() {
+    if (isTauri) return invoke('warm_skin_lookup');
+  },
+
   /** Which model the game gives an offline nickname in this version: 'slim' | 'wide'. */
   async offlineSkinModel(name, version) {
     if (isTauri) return invoke('offline_skin_model', { name, version });
@@ -884,9 +898,23 @@ window.SignalBridge = {
   },
 
   // «Собрать с ИИ» → Rust: generate_ai_modpack(prompt). Returns the model's raw JSON text.
-  async generateModpack(prompt) {
+  /** «Собрать с ИИ» via the Signal server: { reachable, configured, model }. */
+  async aiStatus() {
+    return isTauri ? invoke('ai_status') : { reachable: false, configured: false };
+  },
+
+  /**
+   * The AI's mods checked against Modrinth, then CurseForge, for the pack's loader and version:
+   * [{ name, source: 'modrinth'|'curseforge'|'none', projectId, title, url }]; null without the backend.
+   */
+  async resolveAiMods(version, mods) {
+    return isTauri ? invoke('resolve_ai_mods', { version, mods }) : null;
+  },
+
+  /** The model's raw text from the Signal server's /api/ai/modpack; loader and version are optional. */
+  async generateModpack(prompt, { loader = '', version = '' } = {}) {
     if (!isTauri) throw new Error('генерация доступна только в приложении');
-    return invoke('generate_ai_modpack', { prompt });
+    return invoke('generate_ai_modpack', { prompt, loader, version });
   },
 
   // «Папка игры», «Открыть .minecraft», «Логи», «Скриншоты» → Rust: open_folder(path)

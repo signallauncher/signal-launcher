@@ -182,6 +182,108 @@ pub async fn install(
     Ok(report)
 }
 
+/// One mod named by «Собрать с ИИ»: its name and, when the model knew it, the Modrinth slug.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiMod {
+    pub name: String,
+    #[serde(default)]
+    pub slug: String,
+}
+
+/// Where an AI-named mod was found for the pack's loader and version: `modrinth`, `curseforge` or `none`.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResolvedMod {
+    pub name: String,
+    pub source: &'static str,
+    pub project_id: Option<String>,
+    pub title: Option<String>,
+    pub url: Option<String>,
+}
+
+/// Looks every AI-named mod up at once: Modrinth by name, then by slug, then CurseForge (when this build
+/// has its key). A catalog that does not answer leaves the mod as `none`; only a bad version label fails.
+pub async fn resolve(version_label: &str, mods: Vec<AiMod>) -> Result<Vec<ResolvedMod>, String> {
+    let (loader, game_version) = game::parse_label(version_label);
+    let game_version = game_version.ok_or_else(|| format!("Не удалось определить версию игры из «{version_label}»"))?;
+    let loader = match loader {
+        Loader::Fabric => "fabric",
+        Loader::Forge => "forge",
+        Loader::NeoForge => "neoforge",
+        Loader::Vanilla => return Err("Для сборки нужен Fabric, Forge или NeoForge".into()),
+    };
+    let client = game::http_client()?;
+    let one = |m: AiMod| {
+        let client = client.clone();
+        let game_version = game_version.clone();
+        async move {
+            // the search falls back to its first hit; for a name the model may have made up that has to resemble it
+            let like = |h: &Value| {
+                let title = h.get("title").and_then(Value::as_str).unwrap_or_default();
+                let slug = h.get("slug").and_then(Value::as_str).unwrap_or_default();
+                resembles(&m.name, title) || (!m.slug.is_empty() && slug.eq_ignore_ascii_case(m.slug.trim()))
+            };
+            let mut hit = search_hit(&client, &m.name, loader, &game_version).await.ok().flatten().filter(|h| like(h));
+            if hit.is_none() && !m.slug.trim().is_empty() {
+                hit = search_hit(&client, &m.slug, loader, &game_version).await.ok().flatten().filter(|h| like(h));
+            }
+            if let Some(h) = hit {
+                let slug = h.get("slug").and_then(Value::as_str).unwrap_or_default().to_string();
+                return ResolvedMod {
+                    name: m.name,
+                    source: "modrinth",
+                    project_id: h.get("project_id").and_then(Value::as_str).map(str::to_string),
+                    title: h.get("title").and_then(Value::as_str).map(str::to_string),
+                    url: Some(format!("https://modrinth.com/mod/{slug}")),
+                };
+            }
+            let wanted = clean_query(&m.name).to_lowercase();
+            let query = crate::modrinth::SearchQuery {
+                query: clean_query(&m.name),
+                project_type: "mod".into(),
+                loader: loader.into(),
+                game_version: game_version.clone(),
+                sort: String::new(),
+                offset: 0,
+            };
+            if let Ok(found) = crate::curseforge::search(query).await {
+                let cf = found.hits.iter().find(|h| clean_query(&h.title).to_lowercase() == wanted)
+                    .or_else(|| found.hits.iter().find(|h| resembles(&m.name, &h.title)));
+                if let Some(h) = cf {
+                    return ResolvedMod {
+                        name: m.name,
+                        source: "curseforge",
+                        project_id: Some(h.project_id.clone()),
+                        title: Some(h.title.clone()),
+                        url: Some(format!("https://www.curseforge.com/minecraft/mc-mods/{}", h.slug)),
+                    };
+                }
+            }
+            ResolvedMod { name: m.name, source: "none", project_id: None, title: None, url: None }
+        }
+    };
+    Ok(futures_util::future::join_all(mods.into_iter().take(30).map(one)).await)
+}
+
+/// A catalog title that is plausibly the mod asked for: one name contains the other, or most of the
+/// asked-for words are in the title ("Xaero's Minimap" ~ "Xaero's Minimap (Fair-Play)").
+fn resembles(asked: &str, title: &str) -> bool {
+    let words = |s: &str| -> Vec<String> {
+        clean_query(s).to_lowercase().split_whitespace().filter(|w| w.len() > 1).map(str::to_string).collect()
+    };
+    let (a, t) = (words(asked), words(title));
+    if a.is_empty() || t.is_empty() {
+        return false;
+    }
+    let (aj, tj) = (a.join(" "), t.join(" "));
+    if aj.contains(&tj) || tj.contains(&aj) {
+        return true;
+    }
+    let common = a.iter().filter(|w| t.contains(w)).count();
+    common * 3 >= a.len() * 2
+}
+
 /// Best Modrinth project for a free-text name, filtered by loader and game version.
 async fn search_project(
     client: &reqwest::Client,
@@ -189,6 +291,13 @@ async fn search_project(
     loader: &str,
     game_version: &str,
 ) -> Result<Option<String>, String> {
+    Ok(search_hit(client, name, loader, game_version)
+        .await?
+        .and_then(|h| h.get("project_id").and_then(Value::as_str).map(str::to_string)))
+}
+
+/// The Modrinth search hit for a name: an exact title or slug match among the first five, else the first.
+async fn search_hit(client: &reqwest::Client, name: &str, loader: &str, game_version: &str) -> Result<Option<Value>, String> {
     let query = clean_query(name);
     let facets = format!(r#"[["project_type:mod"],["categories:{loader}"],["versions:{game_version}"]]"#);
     let response = client
@@ -207,10 +316,7 @@ async fn search_project(
         h.get("title").and_then(Value::as_str).map(|t| clean_query(t).to_lowercase()) == Some(wanted.clone())
             || h.get("slug").and_then(Value::as_str).map(str::to_lowercase) == Some(wanted.replace(' ', "-"))
     });
-    Ok(exact
-        .or_else(|| hits.first())
-        .and_then(|h| h.get("project_id").and_then(Value::as_str))
-        .map(str::to_string))
+    Ok(exact.or_else(|| hits.first()).cloned())
 }
 
 /// "Just Enough Items (JEI)" → "Just Enough Items", "Jade 🔍" → "Jade".
@@ -573,5 +679,35 @@ mod tests {
                 Err(e) => println!("«{}»: {e}", inst.name),
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod ai_tests {
+    use super::*;
+
+    /// `cargo test --lib live_resolve_ai_mods -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn live_resolve_ai_mods() {
+        let names = [("Sodium", ""), ("Fabric API", "fabric-api"), ("Xaero's Minimap", ""), ("Totally Fake Mod 9000", ""), ("Mod Menu", "modmenu"), ("Better Shadows Overhaul", "")];
+        let mods = names.iter().map(|(n, s)| AiMod { name: n.to_string(), slug: s.to_string() }).collect();
+        let started = std::time::Instant::now();
+        let out = tauri::async_runtime::block_on(resolve("Fabric 1.21.1", mods)).unwrap();
+        for m in &out {
+            println!("{:<24} {:<10} {:?}", m.name, m.source, m.title);
+        }
+        println!("{} ms", started.elapsed().as_millis());
+        assert_eq!(out.iter().filter(|m| m.source == "modrinth").count(), 4);
+        assert_eq!(out[3].source, "none");
+    }
+
+    #[test]
+    fn names_must_resemble_the_catalog_title() {
+        assert!(resembles("Xaero's Minimap", "Xaero's Minimap (Fair-Play)"));
+        assert!(resembles("Iris", "Iris Shaders"));
+        assert!(resembles("Sodium Extra", "Sodium Extra"));
+        assert!(!resembles("Totally Fake Mod 9000", "Mod Menu"));
+        assert!(!resembles("Better Shadows Overhaul", "Better Combat"));
     }
 }

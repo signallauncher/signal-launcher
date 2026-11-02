@@ -4,16 +4,20 @@
 //! Only `textures.minecraft.net` and `ely.by` are fetched from.
 
 use std::io::Cursor;
+use std::sync::OnceLock;
+use std::time::Duration;
 
 use base64::Engine;
+use futures_util::future::Either;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::game;
-
-const MOJANG_NAME_URL: &str = "https://api.mojang.com/users/profiles/minecraft";
+/// Name → UUID (the Minecraft Services lookup answers a little faster and steadier than api.mojang.com).
+const MOJANG_NAME_URL: &str = "https://api.minecraftservices.com/minecraft/profile/lookup/name";
 const SESSION_PROFILE_URL: &str = "https://sessionserver.mojang.com/session/minecraft/profile";
 const ELYBY_TEXTURES_URL: &str = "https://skinsystem.ely.by/textures";
+/// Per request (name, profile, textures, PNG): a lookup must not stall the nickname field.
+const REQUEST_TIMEOUT: Duration = Duration::from_millis(1500);
 /// A 64×64 skin is a few KB; anything this big is not a skin.
 const MAX_SKIN_BYTES: usize = 256 * 1024;
 
@@ -30,29 +34,71 @@ pub struct OfflineSkin {
 }
 
 /// Skin for an offline nickname: the Minecraft account with that name (Mojang), else Ely.by.
-/// `Ok(None)` — the name has no skin anywhere (the launcher keeps its default skin).
+/// `Ok(None)` — both answered that the name has no skin (the launcher keeps its default skin and caches
+/// that); a source that did not answer makes it an error instead, so the launcher asks again later.
 pub async fn resolve_offline_skin(nickname: &str) -> Result<Option<OfflineSkin>, String> {
     let name = nickname.trim();
     if name.len() < 3 || name.len() > 16 || !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
         return Err("Никнейм: 3–16 символов, латиница, цифры и _".into());
     }
-    let client = game::http_client()?;
-    let mut errors = Vec::new();
-    match mojang_skin(&client, name).await {
-        Ok(Some((url, slim))) => return skin_from(&client, &url, slim, "mojang").await.map(Some),
-        Ok(None) => {}
-        Err(e) => errors.push(e),
+    let client = client()?;
+    // Both sources start at once. Mojang wins: its answer is awaited even when Ely.by is first, but a skin
+    // from Mojang is returned without waiting for Ely.by.
+    // Mojang's chain is three requests long and its name lookup has slow moments: one retry.
+    let mojang = async {
+        match mojang_full(&client, name).await {
+            Err(_) => mojang_full(&client, name).await,
+            answer => answer,
+        }
+    };
+    let elyby = async {
+        match elyby_skin(&client, name).await? {
+            Some((url, slim)) => skin_from(&client, &url, slim, "elyby").await.map(Some),
+            None => Ok(None),
+        }
+    };
+    futures_util::pin_mut!(mojang, elyby);
+    let (mojang, elyby) = match futures_util::future::select(mojang, elyby).await {
+        Either::Left((Ok(Some(skin)), _)) => return Ok(Some(skin)),
+        Either::Left((mojang, elyby)) => (mojang, elyby.await),
+        Either::Right((elyby, mojang)) => (mojang.await, elyby),
+    };
+    match (mojang, elyby) {
+        (Ok(Some(skin)), _) | (_, Ok(Some(skin))) => Ok(Some(skin)),
+        (Ok(None), Ok(None)) => Ok(None),
+        (Err(e), _) | (_, Err(e)) => Err(format!("Скин не получен: {e}")),
     }
-    match elyby_skin(&client, name).await {
-        Ok(Some((url, slim))) => return skin_from(&client, &url, slim, "elyby").await.map(Some),
-        Ok(None) => {}
-        Err(e) => errors.push(e),
+}
+
+async fn mojang_full(client: &reqwest::Client, name: &str) -> Result<Option<OfflineSkin>, String> {
+    match mojang_skin(client, name).await? {
+        Some((url, slim)) => skin_from(client, &url, slim, "mojang").await.map(Some),
+        None => Ok(None),
     }
-    // Both answered «no such name» → no skin; both unreachable → say so.
-    if errors.len() == 2 {
-        return Err(format!("Скин не получен: {}", errors.join("; ")));
+}
+
+/// Opens the connections (TLS included) a lookup needs while the nickname is still being typed, so the
+/// first lookup is as quick as the next ones. Answers are ignored.
+pub async fn warm_up() {
+    let Ok(client) = client() else { return };
+    let hosts = ["https://api.minecraftservices.com/", "https://sessionserver.mojang.com/", "https://textures.minecraft.net/", "https://skinsystem.ely.by/"];
+    futures_util::future::join_all(hosts.iter().map(|url| client.head(*url).send())).await;
+}
+
+/// One client for every lookup, so typing a nickname reuses the open connections (no TLS handshake per
+/// letter). Each request gets REQUEST_TIMEOUT: a slow or dead source must not hold the skin back.
+fn client() -> Result<reqwest::Client, String> {
+    static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
+    if let Some(client) = CLIENT.get() {
+        return Ok(client.clone());
     }
-    Ok(None)
+    let client = reqwest::Client::builder()
+        .user_agent(concat!("SignalLauncher/", env!("CARGO_PKG_VERSION")))
+        .connect_timeout(REQUEST_TIMEOUT)
+        .timeout(REQUEST_TIMEOUT)
+        .build()
+        .map_err(|e| e.to_string())?;
+    Ok(CLIENT.get_or_init(|| client).clone())
 }
 
 /// Name → UUID → textures property of the session profile → (skin url, slim).
@@ -201,9 +247,14 @@ mod tests {
     #[test]
     #[ignore]
     fn live_offline_skin() {
-        for name in ["Notch", "ErickSkrauch", "zz_no_such_x9"] {
+        let started = std::time::Instant::now();
+        tauri::async_runtime::block_on(warm_up());
+        println!("warm-up: {} ms", started.elapsed().as_millis());
+        for name in ["Notch", "ErickSkrauch", "zz_no_such_x9", "Notch"] {
+            let started = std::time::Instant::now();
             let r = tauri::async_runtime::block_on(resolve_offline_skin(name)).unwrap();
-            println!("{name}: {:?}", r.as_ref().map(|s| (s.source.clone(), s.slim, s.face.len(), s.skin.len())));
+            let ms = started.elapsed().as_millis();
+            println!("{name}: {ms} ms {:?}", r.as_ref().map(|s| (s.source.clone(), s.slim, s.face.len(), s.skin.len())));
         }
     }
 }

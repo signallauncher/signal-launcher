@@ -1,6 +1,113 @@
 // Signal Launcher component logic. Exported from the design canvas.
 import { locale as LOCALE, decimal, plural as pluralize, lang as LANG, LANGS, setLang } from './i18n/index.js';
 import { SkinViewer } from './skin-viewer.js';
+import CATALOG from '../server/catalog.items.json';
+
+// Wardrobe slots in display order with their tab labels (scripts/build-catalog.py SLOTS); a tab shows up once
+// the catalog has something for it.
+const COS_SLOTS = [
+  ['hat', 'Шляпы'], ['head', 'Голова'], ['ears', 'Уши'], ['face', 'Лицо'], ['back', 'Спина'], ['wings', 'Крылья'],
+  ['cape', 'Плащи'], ['pet', 'Питомец'], ['shoulders', 'Плечи'], ['top', 'Верх'], ['arms', 'Руки'], ['pants', 'Штаны'],
+  ['skirt', 'Юбки'], ['shoes', 'Обувь'], ['full_body', 'Костюмы'], ['accessory', 'Аксессуары'], ['effect', 'Эффекты'],
+  ['aura', 'Ауры']
+];
+const emptyLook = () => Object.fromEntries(COS_SLOTS.map(([k]) => [k, null]));
+// Bone for a catalog item without `attach` (the mod's WornModels uses the same defaults).
+const SLOT_ATTACH = { hat: 'head', head: 'head', ears: 'head', face: 'head', pet: 'shoulder_left', shoulders: 'shoulder_left' };
+const RARITY = { common: 'Обычный', rare: 'Редкий', epic: 'Эпический', legendary: 'Легендарный' };
+// Card glow for the texture capes; launcher-only styling, not part of the catalog.
+const CAPE_GLOW = {
+  signal: '0 0 26px rgba(91,208,122,0.45)', ender: '0 0 28px rgba(192,76,255,0.55)', obsidian: '0 0 30px rgba(157,107,255,0.8)',
+  midnight: '0 0 22px rgba(120,150,255,0.45)', ember: '0 0 24px rgba(255,120,60,0.5)', frost: '0 0 22px rgba(143,211,255,0.5)'
+};
+// The classic Steve: the skin of every account without one of its own.
+const DEFAULT_SKIN = '/assets/img/default-skin.png';
+const NICK = /^[A-Za-z0-9_]{3,16}$/;
+// Names whose skin is looked up online. «Player» is the default offline account's name, and the real Mojang
+// account with that name is somebody else's: it keeps the default Steve skin with no network request.
+const lookupName = (name) => NICK.test(name || '') && name.toLowerCase() !== 'player';
+// Nickname skin lookups (Mojang, else Ely.by) are reused this long, so typing and switching accounts or screens
+// do not ask again; an offline account looks its nickname up again once a day (players change skins).
+const NICK_SKIN_TTL = 30 * 60 * 1000;
+const ACCOUNT_SKIN_TTL = 24 * 60 * 60 * 1000;
+// 8x8 face (hat layer blended over it) of a skin image, as '#rrggbb' like the backend's (offline_skin.rs).
+function faceOf(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = 64; c.height = 32;
+      const g = c.getContext('2d');
+      g.drawImage(img, 0, 0);
+      const px = g.getImageData(0, 0, 64, 32).data;
+      const hex = (v) => Math.round(v).toString(16).padStart(2, '0');
+      const out = [];
+      for (let y = 8; y < 16; y++) {
+        for (let x = 8; x < 16; x++) {
+          const i = (y * 64 + x) * 4, h = i + 32 * 4, a = px[h + 3] / 255;
+          out.push('#' + [0, 1, 2].map((k) => hex(px[h + k] * a + px[i + k] * (1 - a))).join(''));
+        }
+      }
+      resolve(out);
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+// 3D stage: skin px -> CSS px, and the soles this far above the stage's bottom edge (room for the shadow).
+const STAGE_SCALE = 11;
+const STAGE_FEET_GAP = 40;
+// A point in the middle of the stone path of the default background (bg.jpg), as fractions of the image.
+const BG_PATH = [0.42, 0.82];
+// Settings → Интерфейс. Blocks of the main screen ([data-ui] in launcher.html): name, can be hidden, can be
+// dragged. Sound, notifications, the version picker and the console button live inside a draggable block.
+const UI_PARTS = [
+  ['sidebar', 'Боковое меню', { drag: true }],
+  ['title', 'Заголовок страницы', { hide: true, drag: true }],
+  ['sysIcons', 'Системные кнопки', { drag: true }],
+  ['sound', 'Звук', { hide: true }],
+  ['notifications', 'Уведомления', { hide: true }],
+  ['account', 'Аккаунт', { hide: true, drag: true }],
+  ['stage', 'Персонаж', { hide: true, drag: true }],
+  ['launch', 'Панель запуска', { drag: true }],
+  ['version', 'Выбор версии', { hide: true }],
+  ['console', 'Консоль игры', { hide: true }]
+];
+const UI_PART = Object.fromEntries(UI_PARTS.map(([k, label, o]) => [k, Object.assign({ label: label }, o)]));
+// Visibility switches in the settings (badges are not a block of their own).
+const UI_HIDE = [['title', 'Заголовок страницы'], ['sound', 'Кнопка звука'], ['notifications', 'Уведомления'],
+  ['account', 'Панель аккаунта'], ['badges', 'Бейджи в меню'], ['version', 'Выбор версии'], ['console', 'Кнопка консоли'],
+  ['stage', 'Персонаж']];
+const UI_BASE = { preset: 'classic', sidebar: 'left', icons: false, glass: false, launch: 'full', mono: false, stage: 'center', hide: {}, pos: {} };
+const UI_PRESETS = {
+  classic: ['Классический', 'Меню слева, персонаж по центру, панель запуска внизу', {}],
+  minimal: ['Минимализм', 'Меню иконками, запуск в углу, только фон и скин', {
+    icons: true, glass: true, launch: 'float', hide: { sound: true, notifications: true, title: true, badges: true, console: true }
+  }],
+  compact: ['Компактный', 'Вкладки сверху, персонаж слева — для окон 1024×600', { sidebar: 'top', stage: 'left', launch: 'float', mono: true }]
+};
+const UI_GRID = 8;
+const uiPreset = (key) => Object.assign({}, UI_BASE, UI_PRESETS[key][2], { preset: key, hide: Object.assign({}, UI_PRESETS[key][2].hide), pos: {} });
+// A saved layout with only known values, so an old or hand-edited one cannot break the screen.
+function uiNormalize(u) {
+  if (!u || typeof u !== 'object') return uiPreset('classic');
+  const pick = (v, list, d) => (list.includes(v) ? v : d);
+  const pos = {};
+  Object.keys(u.pos || {}).forEach((k) => {
+    const p = u.pos[k];
+    if (UI_PART[k] && UI_PART[k].drag && p && isFinite(p.x) && isFinite(p.y)) pos[k] = { x: Math.max(0, Math.min(95, +p.x)), y: Math.max(0, Math.min(95, +p.y)) };
+  });
+  const hide = {};
+  UI_HIDE.forEach(([k]) => { if (u.hide && u.hide[k]) hide[k] = true; });
+  return {
+    preset: pick(u.preset, ['classic', 'minimal', 'compact', 'custom'], 'custom'),
+    sidebar: pick(u.sidebar, ['left', 'right', 'top'], 'left'),
+    icons: !!u.icons, glass: !!u.glass, mono: !!u.mono,
+    launch: pick(u.launch, ['full', 'center', 'right', 'float'], 'full'),
+    stage: pick(u.stage, ['left', 'center', 'right'], 'center'),
+    hide: hide, pos: pos
+  };
+}
 // Calls into the desktop backend go through window.SignalBridge (see src/main.js).
 export default function defineLogic(DCLogic) {
 class Component extends DCLogic {
@@ -36,7 +143,6 @@ class Component extends DCLogic {
       imKind: 'mod',
       instPacks: {},
       exp: null,
-      nickSkin: { nick: '', phase: 'idle', data: null },
       bk: null,
       skinGame: { key: '', model: '' },
       installedBy: {},
@@ -89,10 +195,14 @@ class Component extends DCLogic {
       ram: 6,
       jvm: '-XX:+UseG1GC -XX:+ParallelRefProcEnabled',
       theme: 'dark',
-      opts: { hide: true, snapshots: false, oldBeta: false, oldAlpha: false, autoUpdate: true, animations: true, sound: true, discord: true, backup: true, console: false, rays: true, offlineSkin: true },
+      opts: { hide: true, snapshots: false, oldBeta: false, oldAlpha: false, autoUpdate: true, animations: true, sound: true, discord: true, backup: true, console: false, rays: true, offlineSkin: true, companion: true },
       autoSpin: false,
       showLayer: true,
       settingsTab: 'bg',
+      // Settings → Интерфейс: layout of the main screen; uiEditing — the layout editor over the main screen
+      ui: uiPreset('classic'),
+      uiEditing: false,
+      uiRects: [],
       bgMode: 'image',
       shaderTime: 'sunset',
       shaderSpeed: 100,
@@ -142,6 +252,9 @@ class Component extends DCLogic {
       aiStatus: 'idle',
       aiResult: null,
       aiSource: '',
+      // «Собрать с ИИ»: null until asked, then whether the Signal server answers and has its OpenRouter key
+      aiConfigured: null,
+      aiReachable: null,
       aiNote: '',
       orKey: '',
       aiKeyOpen: false,
@@ -151,8 +264,8 @@ class Component extends DCLogic {
       dlStage: '',
       customInstalls: [],
       cosTab: 'cape',
-      cos: { cape: null, hat: null, face: null, back: null, pet: null, aura: null },
-      savedCos: { cape: null, hat: null, face: null, back: null, pet: null, aura: null },
+      cos: emptyLook(),
+      savedCos: emptyLook(),
       cosSaved: false,
       // Look on the Signal server: idle | busy | synced | empty | unclaimed | local | error
       cosSync: { state: 'idle', msg: '' }
@@ -201,13 +314,14 @@ class Component extends DCLogic {
     try {
       const saved = JSON.parse(window.localStorage.getItem('signal.launcher.v1') || 'null');
       if (saved && typeof saved === 'object') {
-        const keep = ['myServers', 'newsSeen', 'versionId', 'accounts', 'accountId', 'mcLatest', 'installedBy', 'modMeta', 'customInstalls', 'savedCos', 'skinUrl', 'skinKey', 'slim', 'bgMode', 'bgColor', 'bgPreset', 'bgBlur', 'bgDim', 'bgFileName', 'opts', 'ram', 'priority', 'backupFreq', 'jvm', 'javaPath'];
+        const keep = ['ui', 'myServers', 'newsSeen', 'versionId', 'accounts', 'accountId', 'mcLatest', 'installedBy', 'modMeta', 'customInstalls', 'savedCos', 'skinUrl', 'skinKey', 'slim', 'bgMode', 'bgColor', 'bgPreset', 'bgBlur', 'bgDim', 'bgFileName', 'opts', 'ram', 'priority', 'backupFreq', 'jvm', 'javaPath'];
         const next = {};
         keep.forEach((k) => { if (saved[k] !== undefined) next[k] = saved[k]; });
         if (next.opts) next.opts = Object.assign({}, this.state.opts, next.opts);
+        if (next.ui) next.ui = uiNormalize(next.ui);
         if (next.bgMode === 'shader') next.bgMode = 'image';
         if (next.savedCos) {
-          // looks saved before the face/back/pet slots existed lack those keys
+          // looks saved before newer slots existed lack those keys
           next.savedCos = Object.assign({}, this.state.savedCos, next.savedCos);
           next.cos = Object.assign({}, next.savedCos);
         }
@@ -241,11 +355,27 @@ class Component extends DCLogic {
       this.raf = requestAnimationFrame(tick);
     };
     this.raf = requestAnimationFrame(tick);
+    this.onResize = () => { this.alignBackground(); this.measureUi(); };
+    window.addEventListener('resize', this.onResize);
+    this.onUiKey = (e) => { if (e.key === 'Escape' && this.state.uiEditing) this.setState({ uiEditing: false }); };
+    window.addEventListener('keydown', this.onUiKey);
+    let savedUi = null;
+    try { savedUi = (JSON.parse(window.localStorage.getItem('signal.launcher.v1') || 'null') || {}).ui; } catch (e) {}
+    if (!savedUi) {
+      window.SignalBridge.uiLayout().then((u) => { if (u) this.setState({ ui: uiNormalize(u) }); }).catch(() => {});
+    }
     this.syncVars();
     this.loadVersions(false);
     this.loadInstances(true);
     this.loadMemory();
     this.loadAccounts().then(() => this.syncLook());
+    // Once the saved state is in: a save from before skins belonged to accounts gives the skin on the model
+    // to the active account; otherwise the active account's nickname skin is checked.
+    this.setState({}, () => {
+      const active = (this.state.accounts || []).find((a) => a.id === this.state.accountId);
+      if (active && !active.skinUrl && !active.skinFrom && this.state.skinUrl) this.adoptSkin();
+      else this.refreshAccountSkin(this.state.accountId);
+    });
     window.SignalBridge.onModpackDrop((path) => this.importModpack(path));
     // A .png dropped anywhere opens «Управление скином» with it.
     window.SignalBridge.onSkinDrop((file) => {
@@ -274,12 +404,199 @@ class Component extends DCLogic {
 
   componentDidUpdate(prevProps, prevState) {
     if (prevState && prevState.accountId !== this.state.accountId) this.syncLook();
+    else if (prevState && (prevState.skinUrl !== this.state.skinUrl || prevState.slim !== this.state.slim)) this.adoptSkin();
     this.syncVars();
     this.syncViewer();
+    this.alignBackground();
     this.persist();
+    if (prevState && prevState.ui !== this.state.ui) {
+      clearTimeout(this.uiSaveTimer);
+      const ui = this.state.ui;
+      this.uiSaveTimer = setTimeout(() => window.SignalBridge.saveUiLayout(ui).catch(() => {}), 800);
+    }
+    if (this.state.uiEditing) this.measureUi();
+  }
+
+  // Root classes that lay the main screen out (CSS in launcher.html, «Settings → Интерфейс»).
+  uiClasses(s) {
+    const u = s.ui;
+    const c = ['ui-root', 'ui-sb-' + u.sidebar, 'ui-launch-' + u.launch, 'ui-stage-' + u.stage];
+    if (u.icons) c.push('ui-sb-icons');
+    if (u.glass) c.push('ui-glass');
+    if (u.mono) c.push('ui-launch-mono');
+    Object.keys(u.hide).forEach((k) => { if (u.hide[k]) c.push('ui-hide-' + k); });
+    Object.keys(u.pos).forEach((k) => c.push('ui-free-' + k));
+    if (s.uiEditing) c.push('ui-editing');
+    return c.join(' ');
+  }
+
+  // A layout change: `custom` marks it as the user's own (no preset). Blocks glide from where they were
+  // to where they land (FLIP): measured before, re-measured after the render, animated by transform.
+  setUi(patch, custom) {
+    const root = this.rootEl;
+    const animate = root && this.state.opts.animations && !this.reduceMotion;
+    const blocks = animate ? UI_PARTS.filter(([k, , o]) => o.drag).map(([k]) => root.querySelector('[data-ui="' + k + '"]')).filter(Boolean) : [];
+    const before = new Map(blocks.map((el) => [el, el.getBoundingClientRect()]));
+    const ui = Object.assign({}, this.state.ui, patch, custom ? { preset: 'custom' } : null);
+    this.setState({ ui: ui }, () => {
+      before.forEach((a, el) => {
+        if (!el.isConnected) return;
+        const b = el.getBoundingClientRect();
+        if (!b.width || !b.height || !a.width || !a.height) return;
+        const dx = a.left - b.left, dy = a.top - b.top, sx = a.width / b.width, sy = a.height / b.height;
+        if (Math.abs(dx) < 1 && Math.abs(dy) < 1 && Math.abs(sx - 1) < 0.01 && Math.abs(sy - 1) < 0.01) return;
+        // a block that changes shape (menu to a top bar) would smear if scaled: it slides and fades in instead
+        const reshaped = Math.abs(sx - 1) > 0.15 || Math.abs(sy - 1) > 0.15;
+        const from = reshaped
+          ? { transform: 'translate(' + (a.left + a.width / 2 - b.left - b.width / 2) + 'px,' + (a.top + a.height / 2 - b.top - b.height / 2) + 'px)', opacity: 0.15 }
+          : { transformOrigin: '0 0', transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + sx + ',' + sy + ')' };
+        el.animate([from, reshaped ? { transform: 'none', opacity: 1 } : { transformOrigin: '0 0', transform: 'none' }],
+          { duration: 380, easing: 'cubic-bezier(.2,.8,.2,1)' });
+      });
+      // edit frames follow once the blocks have arrived
+      clearTimeout(this.uiMeasureTimer);
+      this.uiMeasureTimer = setTimeout(() => this.measureUi(), 420);
+    });
+  }
+
+  setUiHide(key, hidden) {
+    this.setUi({ hide: Object.assign({}, this.state.ui.hide, { [key]: hidden }) }, true);
+  }
+
+  // Values for Settings → Интерфейс and the layout editor over the main screen.
+  uiVals(s, closeAll) {
+    const u = s.ui;
+    const sw = (on, toggle) => ({ on: on, swCls: on ? 'sw is-on' : 'sw', rowCls: on ? 'trow is-on' : 'trow', toggle: toggle });
+    const seg = (key, list) => list.map(([v, label]) => ({
+      label: label, on: u[key] === v, cls: u[key] === v ? 'seg is-active' : 'seg', pick: () => this.setUi({ [key]: v }, true)
+    }));
+    // preset thumbnails: [left, top, width, height] in % of a small window
+    const minis = {
+      classic: [[3, 6, 22, 88, 1], [44, 20, 14, 52, 0.9], [29, 78, 68, 16, 1], [78, 6, 19, 10, 0.8]],
+      minimal: [[3, 6, 7, 88, 0.45], [44, 18, 14, 56, 0.9], [66, 80, 31, 13, 0.55]],
+      compact: [[3, 6, 94, 11, 1], [14, 28, 13, 48, 0.9], [52, 79, 45, 15, 1]]
+    };
+    const hidden = (k) => !!u.hide[k];
+    return {
+      uiPresets: Object.keys(UI_PRESETS).map((k) => ({
+        label: UI_PRESETS[k][0], desc: UI_PRESETS[k][1], on: u.preset === k, cls: u.preset === k ? 'pick is-active' : 'pick',
+        mini: minis[k].map(([l, t, w, h, o]) => ({ l: l, t: t, w: w, h: h, o: o })),
+        pick: () => this.setUi(uiPreset(k))
+      })),
+      uiCustom: u.preset === 'custom',
+      uiSidebarOpts: seg('sidebar', [['left', 'Слева'], ['right', 'Справа'], ['top', 'Сверху']]),
+      uiLaunchOpts: seg('launch', [['full', 'Во всю ширину'], ['center', 'По центру'], ['right', 'Справа'], ['float', 'Плавающая']]),
+      uiStageOpts: seg('stage', [['left', 'Слева'], ['center', 'По центру'], ['right', 'Справа']]),
+      uiIcons: sw(u.icons, () => this.setUi({ icons: !u.icons }, true)),
+      uiGlass: sw(u.glass, () => this.setUi({ glass: !u.glass }, true)),
+      uiMono: sw(u.mono, () => this.setUi({ mono: !u.mono }, true)),
+      uiVisible: UI_HIDE.map(([k, label]) => Object.assign({ label: label }, sw(!hidden(k), () => this.setUiHide(k, !hidden(k))))),
+      uiHasFree: Object.keys(u.pos).length > 0,
+      uiFreeNote: 'Перетащено блоков: ' + Object.keys(u.pos).length + '. Они стоят там, куда их поставили, поверх раскладки.',
+      uiUnpin: () => this.setUi({ pos: {} }, true),
+      uiReset: () => this.setUi(uiPreset('classic')),
+      uiEdit: () => this.setState(Object.assign({ uiEditing: true, tab: 'play' }, closeAll)),
+      uiEditing: s.uiEditing,
+      uiDone: () => this.setState({ uiEditing: false }),
+      uiBoxes: s.uiRects.map(([k, x, y, w, h]) => {
+        const part = UI_PART[k], off = hidden(k);
+        return {
+          label: part.label + (off ? ' · скрыт' : ''), x: x, y: y, w: w, h: h,
+          cls: 'ui-box' + (part.drag ? '' : ' is-fixed') + (off ? ' is-hidden' : '') + (w < 120 || h < 40 ? ' is-small' : ''),
+          canHide: !!part.hide, toggleLabel: off ? 'Вернуть' : 'Скрыть',
+          toggle: () => this.setUiHide(k, !off),
+          drag: (e) => this.uiDragStart(k, e)
+        };
+      })
+    };
+  }
+
+  // Edit mode: the frames sit on the blocks' current boxes (re-measured after renders, resizes and animations).
+  measureUi() {
+    if (!this.state.uiEditing || !this.rootEl) return;
+    const rects = [];
+    UI_PARTS.forEach(([k]) => {
+      const el = this.rootEl.querySelector('[data-ui="' + k + '"]');
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      if (r.width < 2 || r.height < 2) return;
+      rects.push([k, Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)]);
+    });
+    const key = JSON.stringify(rects);
+    if (key === this.uiRectsKey) return;
+    this.uiRectsKey = key;
+    this.setState({ uiRects: rects });
+  }
+
+  // Edit mode: drag a block by its frame. It leaves the layout where it stands, follows the pointer on an
+  // 8 px grid inside the window and is saved as x, y in % of the window; the preset becomes «Пользовательский».
+  uiDragStart(k, e) {
+    if (!UI_PART[k].drag || e.button !== 0 || e.target.closest('button')) return;
+    const el = this.rootEl && this.rootEl.querySelector('[data-ui="' + k + '"]');
+    if (!el) return;
+    e.preventDefault();
+    const frame = e.currentTarget;
+    const W = window.innerWidth, H = window.innerHeight;
+    const r = el.getBoundingClientRect();
+    const snap = (v) => Math.round(v / UI_GRID) * UI_GRID;
+    const put = (x, y) => {
+      this.rootEl.style.setProperty('--ui-' + k + '-x', x + 'px');
+      this.rootEl.style.setProperty('--ui-' + k + '-y', y + 'px');
+    };
+    let x = snap(r.left), y = snap(r.top);
+    put(x, y);
+    const pos = (px, py) => Object.assign({}, this.state.ui.pos, { [k]: { x: px / W * 100, y: py / H * 100 } });
+    this.setState({ ui: Object.assign({}, this.state.ui, { preset: 'custom', pos: pos(x, y) }) });
+    frame.classList.add('dragging');
+    const move = (ev) => {
+      const w = el.offsetWidth, h = el.offsetHeight;
+      x = Math.max(0, Math.min(W - w, snap(r.left + ev.clientX - e.clientX)));
+      y = Math.max(0, Math.min(H - h, snap(r.top + ev.clientY - e.clientY)));
+      put(x, y);
+      frame.style.left = x + 'px';
+      frame.style.top = y + 'px';
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      frame.classList.remove('dragging');
+      this.setState({ ui: Object.assign({}, this.state.ui, { preset: 'custom', pos: pos(x, y) }) }, () => this.measureUi());
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }
+
+  // The default background stands the player on its stone path: on the stage tabs the image takes the
+  // smallest zoom that still covers the window and brings BG_PATH under the soles (bottom edge kept when it
+  // can be). Elsewhere it is plain cover, anchored at the bottom. The layer is fixed at -12 px (parallax room).
+  alignBackground() {
+    const img = this.bgImg, layer = this.bgLayer;
+    if (!img || !layer || !img.naturalWidth) return;
+    const W = layer.clientWidth, H = layer.clientHeight, iw = img.naturalWidth, ih = img.naturalHeight;
+    const cover = Math.max(W / iw, H / ih);
+    let k = cover, L = (W - cover * iw) / 2, T = H - cover * ih;
+    const stage = this.stageEl && this.stageEl.isConnected ? this.stageEl.getBoundingClientRect() : null;
+    if (stage && stage.width) {
+      const fx = stage.left + stage.width / 2 - layer.offsetLeft, fy = stage.bottom - STAGE_FEET_GAP - layer.offsetTop;
+      const [ax, ay] = BG_PATH;
+      const need = Math.max(fx / (ax * iw), (W - fx) / ((1 - ax) * iw), fy / (ay * ih), (H - fy) / ((1 - ay) * ih));
+      k = Math.min(cover * 2, Math.max(cover, need));
+      L = Math.min(0, Math.max(W - k * iw, fx - ax * k * iw));
+      T = Math.min(0, Math.max(H - k * ih, fy - ay * k * ih));
+    }
+    const box = [L, T, k * iw, k * ih].map((v) => Math.round(v) + 'px');
+    if (img.dataset.box === box.join()) return;
+    const first = !img.dataset.box;
+    img.dataset.box = box.join();
+    Object.assign(img.style, { left: box[0], top: box[1], width: box[2], height: box[3] });
+    // glide between tabs and window sizes, but not on the first placement
+    if (first) requestAnimationFrame(() => { img.style.transition = 'left .5s ease, top .5s ease, width .5s ease, height .5s ease'; });
   }
 
   componentWillUnmount() {
+    window.removeEventListener('resize', this.onResize);
+    window.removeEventListener('keydown', this.onUiKey);
+    clearTimeout(this.uiSaveTimer);
     clearInterval(this.timer);
     clearTimeout(this.timer2);
     clearTimeout(this.msTimer);
@@ -305,7 +622,8 @@ class Component extends DCLogic {
       opts: s.opts, ram: s.ram, priority: s.priority, backupFreq: s.backupFreq,
       jvm: s.jvm, javaPath: s.javaPath,
       customInstalls: s.customInstalls, savedCos: s.savedCos, installedBy: s.installedBy, modMeta: s.modMeta, mcLatest: s.mcLatest,
-      accounts: s.accounts, accountId: s.accountId, versionId: s.versionId, myServers: s.myServers, newsSeen: s.newsSeen
+      accounts: s.accounts, accountId: s.accountId, versionId: s.versionId, myServers: s.myServers, newsSeen: s.newsSeen,
+      ui: s.ui
     };
     if (s.bgFileData && s.bgFileData.length < 3000000) { data.bgFileData = s.bgFileData; data.bgFileName = s.bgFileName; }
     else if (s.bgMode === 'file') data.bgMode = 'image';
@@ -318,6 +636,10 @@ class Component extends DCLogic {
   syncVars() {
     const s = this.state;
     if (this.rootEl) {
+      Object.keys(s.ui.pos).forEach((k) => {
+        this.rootEl.style.setProperty('--ui-' + k + '-x', s.ui.pos[k].x + 'vw');
+        this.rootEl.style.setProperty('--ui-' + k + '-y', s.ui.pos[k].y + 'vh');
+      });
       if (s.skinUrl) this.rootEl.style.setProperty('--skin', 'url("' + s.skinUrl + '")');
       else this.rootEl.style.removeProperty('--skin');
     }
@@ -334,16 +656,26 @@ class Component extends DCLogic {
     return acc.type === 'ms' ? { kind: 'ms', id: acc.id, name: acc.name } : { kind: 'offline', id: null, name: acc.name };
   }
 
-  // Only ids the wardrobe still has; a back item that takes the cape's place wins over the cape.
+  // Only ids the wardrobe still has; an item that takes the cape's place (noCape) wins over the cape.
   cleanLook(look) {
     const d = this.cosDefs();
     const out = {};
-    ['hat', 'face', 'back', 'pet', 'cape', 'aura'].forEach((k) => {
+    COS_SLOTS.forEach(([k]) => {
       out[k] = look && d[k].some((c) => c.id === look[k]) ? look[k] : null;
     });
-    const back = d.back.find((b) => b.id === out.back);
-    if (back && back.noCape) out.cape = null;
+    if (this.capeBlocker(out)) out.cape = null;
     return out;
+  }
+
+  // The worn item (outside the cape slot) that cannot be worn with a cape, or undefined.
+  capeBlocker(look) {
+    const d = this.cosDefs();
+    for (const [k] of COS_SLOTS) {
+      if (k === 'cape' || !look[k]) continue;
+      const it = d[k].find((c) => c.id === look[k]);
+      if (it && it.noCape) return it;
+    }
+    return undefined;
   }
 
   // Loads the profile's look from the Signal server. The latest request wins when profiles switch quickly.
@@ -384,21 +716,19 @@ class Component extends DCLogic {
     if (!v) return;
     const s = this.state;
     const d = this.cosDefs();
-    v.setSkin(s.skinUrl || '/assets/img/default-skin.png', s.slim);
+    v.setSkin(s.skinUrl || DEFAULT_SKIN, s.slim);
     v.setLayerVisible(s.showLayer);
     v.setPose(s.pose);
     v.setAnimate(s.opts.animations && !this.reduceMotion);
-    ['hat', 'face', 'back', 'pet'].forEach((slot) => {
+    COS_SLOTS.forEach(([slot]) => {
+      if (slot === 'aura') return;
       const it = d[slot].find((c) => c.id === s.cos[slot]);
-      v.setAccessory(slot, it ? '/assets/cosmetics/models/' + it.model + '.glb' : null);
+      v.setAccessory(slot, it && it.parts ? it.parts : null);
     });
     const cape = d.cape.find((c) => c.id === s.cos.cape);
     v.setAura(s.cos.aura || null);
-    v.setCape(cape ? {
-      key: cape.id,
-      texture: '/assets/cosmetics/capes/' + cape.id + '.png',
-      emissive: '/assets/cosmetics/capes/' + cape.id + '_e.png'
-    } : null);
+    // a model cape is an accessory above; only texture capes go on the cloth
+    v.setCape(cape && cape.texture ? { key: cape.id, texture: cape.texture, emissive: cape.emissive } : null);
   }
 
   applyView() {
@@ -538,33 +868,85 @@ class Component extends DCLogic {
       .catch(() => {});
   }
 
-  // Wearing an account: a Microsoft account brings its own skin to the 3D model.
+  // The skin an account puts on the model: its own (Microsoft, its nickname's or one set by hand), else the
+  // default one, so the previous account's skin never stays on.
+  skinOf(a) {
+    return a && a.skinUrl
+      ? { skinUrl: a.skinUrl, skinKey: a.skinKey || 'custom', slim: !!a.slim }
+      : { skinUrl: '', skinKey: 'default', slim: false };
+  }
+
+  // Wearing an account brings its skin to the 3D model; an offline one also checks its nickname's skin.
   pickAccount(a) {
-    const next = { accountId: a.id, accMenu: false };
-    // Microsoft accounts and offline ones whose nickname had a skin bring it along.
-    if (a.skinUrl) Object.assign(next, { skinUrl: a.skinUrl, skinKey: 'custom', slim: !!a.slim });
+    this.setState(Object.assign({ accountId: a.id, accMenu: false }, this.skinOf(a)));
+    if (a.type !== 'ms') this.refreshAccountSkin(a.id);
+  }
+
+  // Nickname -> skin (null: the name has none), shared by the nickname field and the accounts.
+  // Answers are kept for NICK_SKIN_TTL; a failed lookup is dropped so the next call asks again.
+  resolveNickSkin(name) {
+    if (!lookupName(name)) return Promise.resolve(null);
+    const cache = this.nickSkins || (this.nickSkins = new Map());
+    const key = name.toLowerCase();
+    const hit = cache.get(key);
+    if (hit && Date.now() - hit.at < NICK_SKIN_TTL) return hit.promise;
+    const entry = { at: Date.now(), done: false, data: null };
+    entry.promise = window.SignalBridge.resolveOfflineSkin(name).then((data) => {
+      Object.assign(entry, { done: true, data: data || null });
+      return entry.data;
+    }, (e) => {
+      if (cache.get(key) === entry) cache.delete(key);
+      throw e;
+    });
+    cache.set(key, entry);
+    return entry.promise;
+  }
+
+  // An offline account looks its nickname's skin up again after ACCOUNT_SKIN_TTL, unless its skin was set by
+  // hand. A new skin replaces the old one; «none» never removes a skin found before, because the backend also
+  // answers none when Mojang is down and Ely.by has no such name. The model follows only while that account
+  // is active and still wears its old skin.
+  refreshAccountSkin(id) {
+    const a = (this.state.accounts || []).find((x) => x.id === id);
+    if (!a || a.skinFrom === 'user') return;
+    if (!lookupName(a.name)) {
+      // a skin an earlier version fetched for «Player» belongs to that stranger: back to Steve
+      if (a.skinFrom === 'mojang' || a.skinFrom === 'elyby') this.dropNickSkin(a);
+      return;
+    }
+    if (a.skinCheckedAt && Date.now() - a.skinCheckedAt < ACCOUNT_SKIN_TTL) return;
+    this.resolveNickSkin(a.name).then((data) => {
+      const s = this.state;
+      const cur = (s.accounts || []).find((x) => x.id === id);
+      if (!cur || cur.skinFrom === 'user') return;
+      const skin = data ? { skinUrl: data.skin, slim: !!data.slim, skinKey: 'custom', face: data.face, skinFrom: data.source } : {};
+      const next = { accounts: s.accounts.map((x) => (x.id === id ? Object.assign({}, x, skin, { skinCheckedAt: Date.now() }) : x)) };
+      if (data && s.accountId === id && (s.skinUrl || '') === (cur.skinUrl || '')) Object.assign(next, this.skinOf(skin));
+      this.setState(next);
+    }).catch(() => {});
+  }
+
+  dropNickSkin(a) {
+    const s = this.state;
+    const plain = { skinUrl: '', slim: false, skinKey: 'default', face: null, skinFrom: '', skinCheckedAt: 0 };
+    const next = { accounts: s.accounts.map((x) => (x.id === a.id ? Object.assign({}, x, plain) : x)) };
+    if (s.accountId === a.id && (s.skinUrl || '') === (a.skinUrl || '')) Object.assign(next, this.skinOf(plain));
     this.setState(next);
   }
 
-  // «Автономный режим»: while the nickname is typed, its skin is looked up (Mojang, else Ely.by).
-  lookupNickSkin(nick) {
-    clearTimeout(this.nickTimer);
-    const name = nick.trim();
-    if (!/^[A-Za-z0-9_]{3,16}$/.test(name)) {
-      this.setState({ nickSkin: { nick: name, phase: 'idle', data: null } });
-      return;
-    }
-    this.setState({ nickSkin: { nick: name, phase: 'loading', data: null } });
-    this.nickTimer = setTimeout(() => {
-      window.SignalBridge.resolveOfflineSkin(name)
-        .then((data) => {
-          if (this.state.nickSkin.nick !== name) return;
-          this.setState({ nickSkin: { nick: name, phase: data ? 'found' : 'none', data: data } });
-        })
-        .catch(() => {
-          if (this.state.nickSkin.nick === name) this.setState({ nickSkin: { nick: name, phase: 'error', data: null } });
-        });
-    }, 500);
+  // A skin set by hand (file, preset, reset, Classic/Slim) becomes the active offline account's own,
+  // so switching accounts and back brings it back and the nickname lookup leaves it alone.
+  adoptSkin() {
+    const s = this.state;
+    const a = (s.accounts || []).find((x) => x.id === s.accountId);
+    if (!a || ((a.skinUrl || '') === (s.skinUrl || '') && !!a.slim === !!s.slim)) return;
+    const own = { skinUrl: s.skinUrl, slim: !!s.slim, skinKey: s.skinKey, skinFrom: 'user', face: null };
+    this.setState({ accounts: s.accounts.map((x) => (x.id === a.id ? Object.assign({}, x, own) : x)) });
+    if (!s.skinUrl) return;
+    faceOf(s.skinUrl).then((face) => {
+      const cur = this.state.accounts.find((x) => x.id === a.id);
+      if (cur && cur.skinUrl === s.skinUrl) this.setState({ accounts: this.state.accounts.map((x) => (x === cur ? Object.assign({}, x, { face }) : x)) });
+    }).catch(() => {});
   }
 
   // «Лицензия Microsoft»: device code → browser → wait. `msAttempt` drops answers of cancelled tries.
@@ -611,8 +993,9 @@ class Component extends DCLogic {
     const done = () => {
       const rest = this.allAccounts().filter((x) => x.id !== a.id);
       const next = { accDel: '' };
-      if (this.state.accountId === a.id) next.accountId = rest.length ? rest[0].id : 'o1';
+      if (this.state.accountId === a.id) Object.assign(next, { accountId: rest.length ? rest[0].id : 'o1' }, this.skinOf(rest[0]));
       this.setState(next);
+      if (next.accountId) this.refreshAccountSkin(next.accountId);
       window.SignalBridge.toast(a.name + (a.type === 'ms' ? ' — вход Microsoft удалён с этого компьютера.' : ' удалён.'), { kind: 'info', title: 'Аккаунт удалён' });
     };
     if (a.type === 'ms') {
@@ -785,7 +1168,7 @@ class Component extends DCLogic {
       cosmetics: ['Косметика', 'Плащи, аксессуары и ауры — примерка на 3D-модели'],
       settings: ['Настройки', 'Фон, графика, система и лаунчер']
     };
-    const defaultSkin = '/assets/img/default-skin.png';
+    const defaultSkin = DEFAULT_SKIN;
     const aikar = '-XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1HeapRegionSize=8M -XX:G1ReservePercent=20 -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 -XX:InitiatingHeapOccupancyPercent=15 -XX:G1MixedGCLiveThresholdPercent=90 -XX:G1RSetUpdatingPauseTimePercent=5 -XX:SurvivorRatio=32 -XX:+PerfDisableSharedMem -XX:MaxTenuringThreshold=1';
     const jvmN = s.jvm.trim() ? s.jvm.trim().split(/\s+/).length : 0;
     const plural = pluralize;
@@ -797,7 +1180,7 @@ class Component extends DCLogic {
     const memTight = s.ram > memAvail * 0.8;
     const fmtGb = (n) => decimal(n).replace(/[.,]0$/, '');
     const tg = {};
-    ['sound', 'animations', 'discord', 'snapshots', 'oldBeta', 'oldAlpha', 'hide', 'console', 'backup', 'autoUpdate', 'offlineSkin'].forEach((id) => {
+    ['sound', 'animations', 'discord', 'snapshots', 'oldBeta', 'oldAlpha', 'hide', 'console', 'backup', 'autoUpdate', 'offlineSkin', 'companion'].forEach((id) => {
       const on = !!s.opts[id];
       tg[id] = { on: on, swCls: on ? 'sw is-on' : 'sw', rowCls: on ? 'trow is-on' : 'trow', toggle: () => this.setState({ opts: Object.assign({}, s.opts, { [id]: !on }) }) };
     });
@@ -867,29 +1250,30 @@ class Component extends DCLogic {
       winClose: () => window.SignalBridge.close(),
       showStage: s.tab === 'play' || s.tab === 'cosmetics',
       isCosmetics: s.tab === 'cosmetics',
-      cosTabs: [['hat', 'Голова'], ['face', 'Лицо'], ['back', 'Спина'], ['pet', 'Питомец'], ['cape', 'Плащи'], ['aura', 'Ауры']].map((t) => ({
+      cosTabs: COS_SLOTS.filter(([k]) => this.cosDefs()[k].length).map((t) => ({
         label: t[1], on: s.cosTab === t[0], cls: s.cosTab === t[0] ? 'is-active' : '', pick: () => this.setState({ cosTab: t[0] })
       })),
       cosItems: (() => {
         const d = this.cosDefs();
         // A pack or a katana and a cape take the same spot on the back, so wearing one takes the other off.
-        const wornBack = d.back.find((b) => b.id === s.cos.back);
+        const blocker = this.capeBlocker(s.cos);
         return (d[s.cosTab] || []).map((c) => {
           const on = s.cos[s.cosTab] === c.id;
-          const bumps = !on && (s.cosTab === 'back' ? c.noCape && s.cos.cape : s.cosTab === 'cape' && wornBack && wornBack.noCape);
+          const bumps = !on && (s.cosTab !== 'cape' ? c.noCape && s.cos.cape : !!blocker);
           const rc = { 'Обычный': '#A3ADBB', 'Редкий': '#7FB6FF', 'Эпический': '#C9A8FF', 'Легендарный': '#F2C27A' }[c.rarity] || '#A3ADBB';
           return {
             name: c.name, rarity: c.rarity, rarityColor: rc,
             preview: c.icon
-              ? 'url(/assets/cosmetics/icons/' + c.icon + '.png) center / contain no-repeat, radial-gradient(circle at 50% 62%, rgba(255,255,255,0.09), rgba(255,255,255,0) 65%), #0E1218'
-              : c.preview,
+              ? 'url(' + c.icon + ') center / contain no-repeat, radial-gradient(circle at 50% 62%, rgba(255,255,255,0.09), rgba(255,255,255,0) 65%), #0E1218'
+              : 'radial-gradient(circle at 50% 62%, rgba(255,255,255,0.09), rgba(255,255,255,0) 65%), #0E1218',
             glow: on && c.glow && c.glow !== 'none' ? c.glow : 'none',
             on: on, cls: on ? 'cos-item is-on' : 'cos-item',
-            state: on ? 'Надето · нажмите, чтобы снять' : bumps ? (s.cosTab === 'back' ? 'Примерить · снимет плащ' : 'Примерить · снимет предмет со спины') : 'Примерить',
+            state: on ? 'Надето · нажмите, чтобы снять' : bumps ? (s.cosTab !== 'cape' ? 'Примерить · снимет плащ' : 'Примерить · снимет предмет со спины') : 'Примерить',
             stateColor: on ? '#86DDA0' : bumps ? '#E8C27A' : '#8A94A3',
             pick: () => {
               const next = Object.assign({}, s.cos, { [s.cosTab]: on ? null : c.id });
-              if (bumps) next[s.cosTab === 'back' ? 'cape' : 'back'] = null;
+              if (bumps && s.cosTab !== 'cape') next.cape = null;
+              else if (bumps) COS_SLOTS.forEach(([k]) => { if (k !== 'cape' && d[k].some((x) => x.id === next[k] && x.noCape)) next[k] = null; });
               this.setState({ cos: next, cosSaved: false });
             }
           };
@@ -897,10 +1281,10 @@ class Component extends DCLogic {
       })(),
       cosSummary: (() => {
         const d = this.cosDefs();
-        const names = ['hat', 'face', 'back', 'pet', 'cape', 'aura'].map((k) => { const it = d[k].find((c) => c.id === s.cos[k]); return it ? it.name : null; }).filter(Boolean);
+        const names = COS_SLOTS.map(([k]) => { const it = d[k].find((c) => c.id === s.cos[k]); return it ? it.name : null; }).filter(Boolean);
         return names.length ? 'На игроке: ' + names.join(', ') + '. Покрутите модель, чтобы рассмотреть образ.' : 'Ничего не надето — выберите плащ, аксессуар или ауру.';
       })(),
-      cosClear: () => this.setState({ cos: { cape: null, hat: null, face: null, back: null, pet: null, aura: null }, cosSaved: false }),
+      cosClear: () => this.setState({ cos: emptyLook(), cosSaved: false }),
       cosSave: () => {
         const look = this.cleanLook(s.cos);
         this.setState({ cos: look, savedCos: look, cosSaved: true });
@@ -925,7 +1309,14 @@ class Component extends DCLogic {
       hasCosSyncErr: s.cosSync.state === 'error' && !!s.cosSync.msg,
       cosSyncErr: s.cosSync.msg,
 
-      openAi: () => this.setState({ aiOpen: true, accMenu: false, verMenu: false, friendsOpen: false }),
+      openAi: () => {
+        this.setState({ aiOpen: true, accMenu: false, verMenu: false, friendsOpen: false });
+        window.SignalBridge.aiStatus()
+          .then((st) => this.setState({ aiConfigured: !!(st && st.configured), aiReachable: !!(st && st.reachable) }))
+          .catch(() => this.setState({ aiConfigured: false, aiReachable: false }));
+      },
+      aiStatusText: s.aiConfigured ? 'ИИ подключен' : s.aiConfigured === null ? 'Проверяю ИИ…' : s.aiReachable ? 'ИИ не настроен на сервере' : 'Сервер ИИ недоступен',
+      aiStatusCls: s.aiConfigured === false ? 'ai-status off' : 'ai-status',
       closeAi: () => this.setState({ aiOpen: false }),
       aiOpen: s.aiOpen,
       aiModel: 'openrouter/free',
@@ -962,8 +1353,10 @@ class Component extends DCLogic {
           if (/оптимиз|библиот|ядро|api|lib|core|sodium|lithium|embeddium|modernfix/.test(c)) g = 0;
           else if (/интерфейс|удобств|карт|pvp|пвп|hud|zoom/.test(c)) g = 1;
           else if (/граф|шейдер|звук|декор|атмосф|событ|iris|oculus/.test(c)) g = 2;
+          const src = { modrinth: ['Modrinth', '#7FE3A6'], curseforge: ['CurseForge', '#F0A06A'], none: ['не найден', '#F2998B'] }[mm.source] || ['', ''];
           groups[g].mods.push({
             name: mm.name, category: mm.category, description: mm.description, checked: !!mm.checked,
+            hasSrc: !!src[0], srcLabel: src[0], srcColor: src[1],
             size: '≈' + decimal(this.modSize(mm.name, g)) + ' МБ',
             cls: mm.checked ? 'aimod on' : 'aimod off',
             ckCls: mm.checked ? 'ck on' : 'ck',
@@ -1036,15 +1429,13 @@ class Component extends DCLogic {
       pageTitle: titles[s.tab][0],
       pageSub: titles[s.tab][1],
       hasPageSub: !!titles[s.tab][1],
-      pedSides: Array.from({ length: 36 }, (_, i) => ({ a: i * 10 })),
-      pedTicks: Array.from({ length: 12 }, (_, i) => ({ a: i * 30 })),
       isNews: s.tab === 'news',
       isSkins: s.tab === 'skins',
       isServers: s.tab === 'servers',
       isShots: s.tab === 'shots',
       isWorlds: s.tab === 'worlds',
       isShop: s.tab === 'shop',
-      rootCls: s.opts.animations ? '' : 'reduce',
+      rootCls: (s.opts.animations ? '' : 'reduce ') + this.uiClasses(s),
       rootRef: (el) => { this.rootEl = el; this.syncVars(); },
       onRootMove: (e) => { this.cursor = { x: e.clientX, y: e.clientY }; },
       anyMenu: s.accMenu || s.verMenu || s.friendsOpen || s.notifOpen,
@@ -1062,6 +1453,10 @@ class Component extends DCLogic {
       bgDim: s.bgDim,
       bgDimA: (s.bgDim / 100).toFixed(2),
       bgLayerRef: (el) => { this.bgLayer = el; },
+      bgImgRef: (el) => {
+        this.bgImg = el;
+        if (el) el.addEventListener('load', () => this.alignBackground());
+      },
       bgThumbDefault: s.bgMode === 'image' || (s.bgMode === 'file' && !s.bgFileUrl),
       bgThumbCustom: s.bgMode === 'file' && !!s.bgFileUrl && s.bgFileType !== 'video',
       bgThumbFill: (s.bgMode === 'color' || s.bgMode === 'preset') ? bgSolid : '#11161D',
@@ -1108,6 +1503,10 @@ class Component extends DCLogic {
       stBg: s.settingsTab === 'bg',
       stGame: s.settingsTab === 'game',
       stSys: s.settingsTab === 'sys',
+      stUi: s.settingsTab === 'ui',
+      stUiCls: s.settingsTab === 'ui' ? 'is-active' : '',
+      setStUi: () => this.setState({ settingsTab: 'ui' }),
+      ...this.uiVals(s, closeAll),
       stBgCls: s.settingsTab === 'bg' ? 'is-active' : '',
       stGameCls: s.settingsTab === 'game' ? 'is-active' : '',
       stSysCls: s.settingsTab === 'sys' ? 'is-active' : '',
@@ -1178,10 +1577,10 @@ class Component extends DCLogic {
       friendMsg: s.friendMsg,
       friendMsgColor: s.friendMsgOk ? '#86DDA0' : '#F2998B',
 
-      stageRef: (el) => { this.stageEl = el; },
+      stageRef: (el) => { this.stageEl = el; requestAnimationFrame(() => this.alignBackground()); },
       viewerRef: (el) => {
         if (!el) return;
-        if (!this.viewer) this.viewer = new SkinViewer({ scale: 11, originY: 290, perspective: 1400 });
+        if (!this.viewer) this.viewer = new SkinViewer({ scale: STAGE_SCALE, feetFromBottom: STAGE_FEET_GAP, perspective: 1400 });
         this.viewer.mount(el);
         this.syncViewer();
         this.applyView();
@@ -1428,7 +1827,7 @@ class Component extends DCLogic {
   // The launcher's skin for an offline game: 64×64 PNGs (base64) with Classic and Slim arms.
   // The game picks the model for an offline nickname itself, so the resource pack gets both.
   skinVariants() {
-    const src = this.state.skinUrl || '/assets/img/default-skin.png';
+    const src = this.state.skinUrl || DEFAULT_SKIN;
     const sourceSlim = !!this.state.slim;
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -2102,55 +2501,31 @@ class Component extends DCLogic {
     return out;
   }
 
+  // Wardrobe items per slot, built once from server/catalog.items.json (the source of the published catalog).
   cosDefs() {
-    return {
-      cape: [
-        { id: 'signal', name: 'Signal', rarity: 'Эпический', icon: 'cape_signal', glow: '0 0 26px rgba(91,208,122,0.45)' },
-        { id: 'ender', name: 'Эндер', rarity: 'Легендарный', icon: 'cape_ender', glow: '0 0 28px rgba(192,76,255,0.55)' },
-        { id: 'obsidian', name: 'Обсидиан', rarity: 'Легендарный', icon: 'cape_obsidian', glow: '0 0 30px rgba(157,107,255,0.8)' },
-        { id: 'midnight', name: 'Полночь', rarity: 'Эпический', icon: 'cape_midnight', glow: '0 0 22px rgba(120,150,255,0.45)' },
-        { id: 'ember', name: 'Угли', rarity: 'Редкий', icon: 'cape_ember', glow: '0 0 24px rgba(255,120,60,0.5)' },
-        { id: 'frost', name: 'Иней', rarity: 'Редкий', icon: 'cape_frost', glow: '0 0 22px rgba(143,211,255,0.5)' },
-        { id: 'copper', name: 'Медь', rarity: 'Редкий', icon: 'cape_copper', glow: 'none' }
-      ],
-      hat: [
-        { id: 'crown', name: 'Корона', rarity: 'Легендарный', model: 'acc_crown', icon: 'acc_crown' },
-        { id: 'headphones', name: 'Неоновые наушники', rarity: 'Эпический', model: 'acc_headphones', icon: 'acc_headphones' },
-        { id: 'horns', name: 'Неоновые рожки', rarity: 'Эпический', model: 'acc_horns', icon: 'acc_horns' },
-        { id: 'tophat', name: 'Цилиндр', rarity: 'Редкий', model: 'acc_tophat', icon: 'acc_tophat' },
-        { id: 'rattan', name: 'Соломенная шляпа', rarity: 'Редкий', model: 'imp_rattan_hat', icon: 'imp_rattan_hat' },
-        { id: 'witch', name: 'Шляпа ведьмы', rarity: 'Эпический', model: 'imp_witch_hat', icon: 'imp_witch_hat' },
-        { id: 'star_halo', name: 'Звёздный нимб', rarity: 'Легендарный', model: 'imp_halo', icon: 'imp_halo' },
-        { id: 'devil_horns', name: 'Рожки дьявола', rarity: 'Редкий', model: 'imp_devil_horns', icon: 'imp_devil_horns' }
-      ],
-      face: [
-        { id: 'visor', name: 'Кибер-визор', rarity: 'Эпический', model: 'acc_visor', icon: 'acc_visor' },
-        { id: 'oni', name: 'Маска они', rarity: 'Эпический', model: 'acc_oni', icon: 'acc_oni' },
-        { id: 'tinted', name: 'Тонированные очки', rarity: 'Обычный', model: 'imp_tinted_glasses', icon: 'imp_tinted_glasses' },
-        { id: 'cyber_goggles', name: 'Кибер-гогглы', rarity: 'Эпический', model: 'imp_cyber_goggles', icon: 'imp_cyber_goggles' }
-      ],
-      back: [
-        { id: 'wings', name: 'Неоновые крылья', rarity: 'Легендарный', model: 'acc_wings', icon: 'acc_wings' },
-        { id: 'katana', name: 'Катана', rarity: 'Эпический', model: 'acc_katana', icon: 'acc_katana', noCape: true },
-        { id: 'backpack', name: 'Тактический рюкзак', rarity: 'Редкий', model: 'acc_backpack', icon: 'acc_backpack', noCape: true },
-        { id: 'angel_wings', name: 'Крылья ангела', rarity: 'Легендарный', model: 'imp_angel_wings', icon: 'imp_angel_wings' },
-        { id: 'school_backpack', name: 'Школьный рюкзак', rarity: 'Обычный', model: 'imp_school_backpack', icon: 'imp_school_backpack', noCape: true }
-      ],
-      pet: [
-        { id: 'parrot', name: 'Попугай', rarity: 'Эпический', model: 'pet_parrot', icon: 'pet_parrot' },
-        { id: 'baby_dragon', name: 'Дракончик', rarity: 'Эпический', model: 'imp_baby_dragon', icon: 'imp_baby_dragon' },
-        { id: 'leaf_dragon', name: 'Листовой дракон', rarity: 'Легендарный', model: 'imp_leaf_dragon', icon: 'imp_leaf_dragon' }
-      ],
-      aura: [
-        { id: 'flame', name: 'Пламя', rarity: 'Эпический', icon: 'aura_flame' },
-        { id: 'portal', name: 'Портал Края', rarity: 'Легендарный', icon: 'aura_portal' },
-        { id: 'neon', name: 'Неоновые глифы', rarity: 'Эпический', icon: 'aura_neon' },
-        { id: 'soul', name: 'Пламя душ', rarity: 'Легендарный', icon: 'aura_soul' },
-        { id: 'snow', name: 'Морозный вихрь', rarity: 'Редкий', icon: 'aura_snow' },
-        { id: 'emerald', name: 'Изумрудные искры', rarity: 'Редкий', icon: 'aura_emerald' },
-        { id: 'sakura', name: 'Сакура', rarity: 'Редкий', icon: 'aura_sakura' }
-      ]
-    };
+    if (this.cosCache) return this.cosCache;
+    const asset = (p) => (p ? '/assets/cosmetics/' + p : null);
+    const out = emptyLook();
+    COS_SLOTS.forEach(([k]) => { out[k] = []; });
+    CATALOG.items.forEach((it) => {
+      if (!out[it.slot]) return;
+      const parts = it.parts
+        ? it.parts.map((p) => ({ attach: p.attach, url: asset(p.model) }))
+        : it.model ? [{ attach: it.attach || SLOT_ATTACH[it.slot] || 'body', url: asset(it.model) }] : null;
+      out[it.slot].push({
+        id: it.id,
+        name: (LANG === 'en' ? it.name.en : it.name.ru) || it.name.ru || it.name.en || it.id,
+        rarity: RARITY[it.rarity] || RARITY.common,
+        icon: asset(it.icon),
+        parts,
+        texture: asset(it.texture),
+        emissive: asset(it.emissive),
+        noCape: !!it.noCape && it.slot !== 'cape',
+        glow: CAPE_GLOW[it.id] || 'none'
+      });
+    });
+    this.cosCache = out;
+    return out;
   }
 
   parsePack(text) {
@@ -2164,6 +2539,7 @@ class Component extends DCLogic {
     if (!obj || !Array.isArray(obj.mods)) return null;
     const mods = obj.mods.filter((m) => m && (m.name || m.title)).slice(0, 20).map((m) => ({
       name: String(m.name || m.title).slice(0, 60),
+      slug: String(m.slug || '').slice(0, 64),
       category: String(m.category || 'Разное').slice(0, 30),
       description: String(m.description || m.why || m.reason || '').slice(0, 180)
     }));
@@ -2278,7 +2654,7 @@ class Component extends DCLogic {
     let result = null;
     let note = '';
     try {
-      // Rust command generate_ai_modpack talks to OpenRouter; the key stays in the backend.
+      // Rust command generate_ai_modpack asks the Signal server, which holds the OpenRouter key.
       const text = await window.SignalBridge.generateModpack(prompt);
       result = this.parsePack(text);
       if (!result) throw new Error('ответ не в формате JSON');
@@ -2293,6 +2669,22 @@ class Component extends DCLogic {
       result = this.fallbackPack(prompt);
     }
     result.mods = result.mods.map((mm, i) => Object.assign({ id: 'm' + i, checked: true }, mm));
+    // Every mod is looked up on Modrinth, then CurseForge, for this loader and version: what is not there
+    // stays in the list unticked, and the install takes exactly the projects found.
+    try {
+      const found = await window.SignalBridge.resolveAiMods(result.loader + ' ' + result.version, result.mods.map((mm) => ({ name: mm.name, slug: mm.slug || '' })));
+      if (Array.isArray(found) && found.length === result.mods.length) {
+        result.mods = result.mods.map((mm, i) => {
+          const f = found[i];
+          return Object.assign({}, mm, { source: f.source, projectId: f.projectId || null, url: f.url || '', checked: f.source !== 'none' },
+            f.title && f.title !== mm.name ? { name: f.title } : null);
+        });
+        const missing = result.mods.filter((mm) => mm.source === 'none').length;
+        if (missing) note = (note ? note + ' ' : '') + 'Не найдено для ' + result.loader + ' ' + result.version + ': ' + missing + ' — сняты с установки.';
+      }
+    } catch (e) {
+      note = (note ? note + ' ' : '') + 'Каталоги модов сейчас не ответили — моды будут искаться при установке.';
+    }
     this.setState({ aiStatus: 'done', aiResult: result, aiSource: source, aiNote: note });
   }
 
@@ -2304,13 +2696,28 @@ class Component extends DCLogic {
     const id = 'c' + Date.now();
     const name = r.loader + ' ' + r.version;
     this.setState({ dlBusy: true, dlDone: false, dlProgress: 0, dlStage: 'Поиск модов на Modrinth…' });
+    const fromCf = mods.filter((mm) => mm.source === 'curseforge' && mm.projectId);
+    const fromMr = mods.filter((mm) => !fromCf.includes(mm));
     window.SignalBridge.installMods({
       instanceId: id,
       instanceName: r.title,
       version: name,
-      mods: mods.map((mm) => ({ name: mm.name })),
+      mods: fromMr.map((mm) => (mm.projectId ? { name: mm.name, projectId: mm.projectId } : { name: mm.name })),
       onProgress: (p) => this.setState({ dlProgress: Math.max(this.state.dlProgress, p.percent), dlStage: p.label })
     })
+      .then(async (report) => {
+        for (const mm of fromCf) {
+          this.setState({ dlStage: 'CurseForge: ' + mm.name + '…' });
+          try {
+            const cf = await window.SignalBridge.installCurseforge({ instanceId: id, instanceName: r.title, version: name, projectId: mm.projectId, kind: 'mod', title: mm.name });
+            report.installed = report.installed.concat((cf && cf.installed) || []);
+            report.skipped = report.skipped.concat((cf && cf.skipped) || []);
+          } catch (e) {
+            report.skipped.push({ name: mm.name, reason: String(e) });
+          }
+        }
+        return report;
+      })
       .then((report) => {
         const n = report.installed.length;
         const deps = report.installed.filter((x) => x.dependency).length;
@@ -3333,6 +3740,7 @@ class Component extends DCLogic {
       openConsole: !!s.opts.console,
       server: server || null,
       skin: skin,
+      companion: s.opts.companion !== false,
       // Real progress from the Rust downloader («Скачивание библиотек (12/48)…» and so on).
       onProgress: (p) => this.setState({ progress: Math.max(this.state.progress, p.percent), launchStage: p.label })
     }))
@@ -3456,16 +3864,6 @@ class Component extends DCLogic {
     else if (nick) { nickHint = 'Никнейм подходит'; nickHintColor = '#7FD99A'; }
 
     const modalTitles = { choose: 'Добавить аккаунт', ms: 'Вход Microsoft', offline: 'Автономный режим' };
-    const ns = s.nickSkin;
-    const nickFound = valid && ns.nick === nick.trim() && ns.phase === 'found' ? ns.data : null;
-    const sourceNames = { mojang: 'Mojang', elyby: 'Ely.by' };
-    let nickSkinNote = 'Скин подтянется по нику из Mojang или Ely.by, если такой игрок есть.';
-    if (valid && ns.nick === nick.trim()) {
-      if (ns.phase === 'loading') nickSkinNote = 'Ищу скин «' + nick.trim() + '»…';
-      if (ns.phase === 'none') nickSkinNote = 'Скина с таким ником нет — будет стандартный.';
-      if (ns.phase === 'error') nickSkinNote = 'Скин сейчас не загрузился — будет стандартный.';
-      if (nickFound) nickSkinNote = 'Скин найден: ' + (sourceNames[nickFound.source] || nickFound.source) + ' · ' + (nickFound.slim ? 'Slim' : 'Classic');
-    }
 
     const base = {
       accent: accent,
@@ -3579,30 +3977,31 @@ class Component extends DCLogic {
       },
       msOpenPage: () => window.SignalBridge.openLoginPage(s.msUri || 'https://www.microsoft.com/link').catch((e) => window.SignalBridge.toast(String(e), { kind: 'error', title: 'Браузер не открылся' })),
       msRetry: () => this.startMsLogin(),
-      chooseOffline: () => this.setState({ modal: 'offline' }),
+      chooseOffline: () => {
+        this.setState({ modal: 'offline' });
+        window.SignalBridge.warmSkinLookup().catch(() => {});
+      },
       nick: nick,
-      onNick: (e) => { this.setState({ nick: e.target.value }); this.lookupNickSkin(e.target.value); },
+      onNick: (e) => this.setState({ nick: e.target.value }),
+      onNickKey: (e) => { if (e.key === 'Enter') base.addOffline(); },
       nickHint: nickHint,
       nickHintColor: nickHintColor,
       nickInvalid: !valid || taken,
       nickPreview: nick || 'Никнейм',
-      newHead: nickFound ? this.faceHead(nickFound.face) : this.head('hood'),
-      nickSkinNote: nickSkinNote,
-      nickSkinColor: nickFound ? '#7FD99A' : '#8A94A3',
+      newHead: this.head('hood'),
+      // Saved at once with Steve and the dialog closes; the nickname's skin (Mojang, else Ely.by) is fetched
+      // in the background and put on the model and the avatar when it arrives (refreshAccountSkin).
       addOffline: () => {
         if (!valid || taken) return;
         const id = 'a' + Date.now();
-        const found = nickFound ? { face: nickFound.face, skinUrl: nickFound.skin, slim: !!nickFound.slim, skinFrom: nickFound.source } : {};
         const next = {
-          accounts: (s.accounts || []).concat([Object.assign({ id: id, name: nick, type: 'offline', skin: 'hood' }, found)]),
+          accounts: (s.accounts || []).concat([{ id: id, name: nick.trim(), type: 'offline', skin: 'hood' }]),
           accountId: id,
           modal: null,
-          nick: '',
-          nickSkin: { nick: '', phase: 'idle', data: null }
+          nick: ''
         };
-        // The new account is the active one: its skin becomes the launcher's (and the game's) skin.
-        if (nickFound) Object.assign(next, { skinUrl: nickFound.skin, skinKey: 'custom', slim: !!nickFound.slim });
-        this.setState(next);
+        Object.assign(next, this.skinOf(null));
+        this.setState(next, () => this.refreshAccountSkin(id));
       },
 
       viewCatalog: s.modsView !== 'installed',

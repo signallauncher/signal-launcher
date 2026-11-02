@@ -93,6 +93,8 @@ pub struct LaunchOptions {
     /// A Java picked in the settings (global or the installation's own); `None` — Mojang's
     /// runtime for the version. One that does not fit the version is replaced (see `java_note`).
     pub java_path: Option<String>,
+    /// The «Signal Companion» setting: put the mod into Fabric installations, or take it out.
+    pub companion: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -342,7 +344,9 @@ pub async fn launch(app: AppHandle, opts: LaunchOptions) -> Result<LaunchOutcome
 
     // Signal Companion: the mod jar built for this version into mods/ (companion_mod.rs); never blocks the launch.
     let mut mod_note = String::new();
-    if let (Loader::Fabric, Some(mc)) = parse_label(&label) {
+    if !opts.companion {
+        crate::companion_mod::remove(&instance);
+    } else if let (Loader::Fabric, Some(mc)) = parse_label(&label) {
         progress.step("companion", "Signal Companion…", 19.0);
         match crate::companion_mod::install(&client, &instance, &mc).await {
             Ok(target) => println!("[signal] companion mod for {mc}: {}", target.as_deref().unwrap_or("none")),

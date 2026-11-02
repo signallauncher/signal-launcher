@@ -18,7 +18,7 @@ use tauri::{AppHandle, Manager};
 
 use crate::{auth, game};
 
-const API: &str = "https://signallauncher.h4ck.me/v1";
+const API: &str = "https://signallauncher.mooo.com/v1";
 const MOJANG_JOIN: &str = "https://sessionserver.mojang.com/session/minecraft/join";
 /// A stored API token is renewed this long before it runs out.
 const TOKEN_MARGIN_S: i64 = 3600;

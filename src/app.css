@@ -3,7 +3,10 @@ html,
 body,
 #app {
   margin: 0;
-  min-height: 100%;
+  /* the window itself never scrolls: pages scroll inside the layout (see .scroll-y in launcher.html) */
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
   background: #07090C;
 }
 

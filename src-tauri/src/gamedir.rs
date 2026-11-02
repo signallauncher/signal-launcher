@@ -59,6 +59,14 @@ pub fn init(app: &AppHandle) {
 }
 
 fn save(app: &AppHandle, dir: Option<&Path>) -> Result<(), String> {
+    update(app, |settings| match dir {
+        Some(d) => settings.insert("gameDir".into(), crate::game::path_str(d).into()),
+        None => settings.remove("gameDir"),
+    })
+}
+
+/// Rewrites `settings.json` with one change, keeping every other key.
+fn update<R>(app: &AppHandle, change: impl FnOnce(&mut serde_json::Map<String, Value>) -> R) -> Result<(), String> {
     let path = settings_path(app).ok_or("Нет папки данных приложения")?;
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|e| e.to_string())?;
@@ -67,11 +75,22 @@ fn save(app: &AppHandle, dir: Option<&Path>) -> Result<(), String> {
         .ok()
         .and_then(|b| serde_json::from_slice::<serde_json::Map<String, Value>>(&b).ok())
         .unwrap_or_default();
-    match dir {
-        Some(d) => settings.insert("gameDir".into(), crate::game::path_str(d).into()),
-        None => settings.remove("gameDir"),
-    };
+    change(&mut settings);
     fs::write(&path, Value::Object(settings).to_string()).map_err(|e| e.to_string())
+}
+
+/// Settings → Интерфейс: the main screen's layout (preset, hidden blocks, dragged positions). The launcher
+/// keeps it in localStorage too; this copy survives a reset of the WebView data.
+pub fn ui_layout(app: &AppHandle) -> Option<Value> {
+    let bytes = fs::read(settings_path(app)?).ok()?;
+    serde_json::from_slice::<Value>(&bytes).ok()?.get("uiLayout").filter(|v| v.is_object()).cloned()
+}
+
+pub fn set_ui_layout(app: &AppHandle, layout: Value) -> Result<(), String> {
+    if !layout.is_object() {
+        return Err("Раскладка интерфейса должна быть объектом".into());
+    }
+    update(app, |settings| settings.insert("uiLayout".into(), layout))
 }
 
 #[derive(Debug, Serialize)]

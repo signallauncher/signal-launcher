@@ -27,23 +27,16 @@ use std::time::Duration;
 
 use serde_json::json;
 
-const OPENROUTER_URL: &str = "https://openrouter.ai/api/v1/chat/completions";
-const OPENROUTER_MODEL: &str = "openrouter/free";
-const SYSTEM_PROMPT: &str = "Ты — сборщик модпаков Minecraft. Отвечай СТРОГО одним JSON-объектом без markdown и пояснений: \
-{\"title\": string, \"description\": string (1–2 предложения по-русски), \"loader\": \"Fabric\" | \"Forge\" | \"NeoForge\", \
-\"version\": string (например \"1.21.1\"), \"mods\": [{\"name\": string (реальное название мода с Modrinth или CurseForge), \
-\"category\": string (по-русски, 1–2 слова), \"description\": string (одно короткое предложение по-русски)}]}. \
-Подбери 8–14 реальных, совместимых между собой модов под выбранный загрузчик и версию, обязательно добавь нужные библиотеки \
-(например, Fabric API для Fabric).";
+/// Signal server: «Собрать с ИИ» goes through it, the OpenRouter key stays there. `SIGNAL_SERVER` overrides
+/// it for development (a local signal-api).
+const SIGNAL_SERVER: &str = "https://signallauncher.mooo.com";
 
-/// The OpenRouter key lives only in the backend: taken from the OPENROUTER_API_KEY environment
-/// variable at runtime, or baked in at compile time if the variable was set during `tauri build`.
-fn openrouter_key() -> Option<String> {
-    std::env::var("OPENROUTER_API_KEY")
+fn signal_server() -> String {
+    std::env::var("SIGNAL_SERVER")
         .ok()
-        .or_else(|| option_env!("OPENROUTER_API_KEY").map(str::to_string))
-        .map(|k| k.trim().to_string())
-        .filter(|k| !k.is_empty())
+        .map(|s| s.trim().trim_end_matches('/').to_string())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| SIGNAL_SERVER.to_string())
 }
 
 /// Expands Windows-style `%VAR%` segments, e.g. `%APPDATA%\.minecraft`. `%MINECRAFT%` is the
@@ -103,6 +96,7 @@ async fn launch_minecraft(
     server: Option<String>,
     skin: Option<skinpack::SkinPayload>,
     java_path: Option<String>,
+    companion: Option<bool>,
 ) -> Result<game::LaunchOutcome, String> {
     // Microsoft account: fresh tokens before anything is downloaded, so a dead session fails fast.
     let auth = match account_id.filter(|id| !id.is_empty()) {
@@ -129,62 +123,79 @@ async fn launch_minecraft(
         server,
         skin,
         java_path: java_path.filter(|p| !p.trim().is_empty()),
+        companion: companion.unwrap_or(true),
     };
     game::launch(app, opts).await
 }
 
-/// «Собрать с ИИ». Sends the prompt to OpenRouter and returns the model's raw text
-/// (the frontend parses the JSON and falls back to a preset on any error).
+/// «Собрать с ИИ»: whether the Signal server answers and has its OpenRouter key, for the status badge.
 #[tauri::command]
-async fn generate_ai_modpack(prompt: String) -> Result<String, String> {
-    let key = openrouter_key().ok_or("OPENROUTER_API_KEY не задан")?;
+async fn ai_status() -> serde_json::Value {
+    let answer = async {
+        let client = reqwest::Client::builder().timeout(Duration::from_secs(4)).build().ok()?;
+        let response = client.get(format!("{}/api/ai/status", signal_server())).send().await.ok()?;
+        response.json::<serde_json::Value>().await.ok()
+    };
+    match answer.await {
+        Some(v) => json!({ "reachable": true, "configured": v.get("configured").and_then(|c| c.as_bool()).unwrap_or(false), "model": v.get("model") }),
+        None => json!({ "reachable": false, "configured": false }),
+    }
+}
+
+#[cfg(test)]
+mod ai_proxy_tests {
+    /// Against a running signal-api: `SIGNAL_SERVER=http://127.0.0.1:3901 cargo test --lib live_ai_proxy -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn live_ai_proxy() {
+        tauri::async_runtime::block_on(async {
+            println!("status: {}", super::ai_status().await);
+            for i in 0..7 {
+                let r = super::generate_ai_modpack("космос и ракеты".into(), Some("Fabric".into()), Some("1.21.1".into())).await;
+                println!("{i}: {}", match r { Ok(t) => format!("ok {} chars", t.len()), Err(e) => e });
+            }
+        });
+    }
+}
+
+/// «Собрать с ИИ»: the mods the model named, looked up on Modrinth (then CurseForge) for the pack's loader
+/// and version, so the list shows what really exists and the install takes exactly those projects.
+#[tauri::command]
+async fn resolve_ai_mods(version: String, mods: Vec<mods::AiMod>) -> Result<Vec<mods::ResolvedMod>, String> {
+    mods::resolve(&version, mods).await
+}
+
+/// «Собрать с ИИ»: the prompt goes to the Signal server, which asks OpenRouter with its own key and returns the
+/// model's raw text (the frontend parses the JSON pack and checks its mods). Loader and version are optional.
+#[tauri::command]
+async fn generate_ai_modpack(prompt: String, loader: Option<String>, version: Option<String>) -> Result<String, String> {
     let prompt = prompt.trim();
     if prompt.is_empty() {
         return Err("Пустой запрос".into());
     }
-
     let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(30))
+        .timeout(Duration::from_secs(70))
+        .user_agent(concat!("SignalLauncher/", env!("CARGO_PKG_VERSION")))
         .build()
         .map_err(|e| e.to_string())?;
-
-    let body = json!({
-        "model": OPENROUTER_MODEL,
-        "temperature": 0.6,
-        "messages": [
-            { "role": "system", "content": SYSTEM_PROMPT },
-            { "role": "user", "content": prompt }
-        ]
-    });
-
+    let body = json!({ "prompt": prompt, "loader": loader.unwrap_or_default(), "version": version.unwrap_or_default() });
     let response = client
-        .post(OPENROUTER_URL)
-        .bearer_auth(key)
-        .header("HTTP-Referer", "https://signallauncher.app")
-        .header("X-Title", "Signal Launcher")
+        .post(format!("{}/api/ai/modpack", signal_server()))
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("сеть недоступна: {e}"))?;
-
+        .map_err(|e| format!("сервер Signal недоступен: {e}"))?;
     let status = response.status();
-    let data: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| format!("некорректный ответ: {e}"))?;
-
+    let retry = response.headers().get("retry-after").and_then(|v| v.to_str().ok()).map(str::to_string);
+    let data: serde_json::Value = response.json().await.map_err(|e| format!("некорректный ответ сервера: {e}"))?;
     if !status.is_success() {
-        let message = data
-            .pointer("/error/message")
-            .and_then(|v| v.as_str())
-            .unwrap_or("неизвестная ошибка");
+        if status.as_u16() == 429 {
+            return Err(format!("слишком много запросов — повторите через {} с", retry.unwrap_or_else(|| "60".into())));
+        }
+        let message = data.pointer("/error/message").and_then(|v| v.as_str()).unwrap_or("неизвестная ошибка");
         return Err(format!("HTTP {}: {message}", status.as_u16()));
     }
-
-    data.pointer("/choices/0/message/content")
-        .and_then(|v| v.as_str())
-        .map(str::to_string)
-        .ok_or_else(|| "пустой ответ модели".to_string())
+    data.get("text").and_then(|v| v.as_str()).map(str::to_string).ok_or_else(|| "пустой ответ модели".to_string())
 }
 
 /// «Папка игры», «Открыть .minecraft», screenshots: opens a folder in the file manager or a file
@@ -407,6 +418,17 @@ fn read_skin_png(path: String) -> Result<tauri::ipc::Response, String> {
 }
 
 /// «Сменить папку…»: where the game folder is.
+/// Settings → Интерфейс: the saved main-screen layout from `settings.json` (`null` — none yet).
+#[tauri::command]
+fn ui_layout(app: tauri::AppHandle) -> Option<serde_json::Value> {
+    gamedir::ui_layout(&app)
+}
+
+#[tauri::command]
+fn set_ui_layout(app: tauri::AppHandle, layout: serde_json::Value) -> Result<(), String> {
+    gamedir::set_ui_layout(&app, layout)
+}
+
 #[tauri::command]
 fn game_dir_info() -> gamedir::GameDirInfo {
     gamedir::info()
@@ -490,6 +512,12 @@ async fn export_mrpack(
 #[tauri::command]
 async fn resolve_offline_skin(nickname: String) -> Result<Option<offline_skin::OfflineSkin>, String> {
     offline_skin::resolve_offline_skin(&nickname).await
+}
+
+/// «Автономный режим» opened: connect to the skin sources before the nickname is typed.
+#[tauri::command]
+async fn warm_skin_lookup() {
+    offline_skin::warm_up().await
 }
 
 /// Which player model the game gives an offline nickname (`slim` | `wide`).
@@ -689,6 +717,11 @@ pub fn run() {
             install_curseforge_modpack,
             offline_skin_model,
             resolve_offline_skin,
+            ai_status,
+            resolve_ai_mods,
+            ui_layout,
+            set_ui_layout,
+            warm_skin_lookup,
             instance_backups,
             backup_instance_world,
             restore_world_backup,

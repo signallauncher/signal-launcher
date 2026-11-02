@@ -12,3 +12,4 @@ src-tauri/gen/
 .claude/
 
 website/
+__pycache__/

@@ -2,7 +2,104 @@
 <x-dc>
 <helmet>
 <style>
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 body{margin:0;background:#07090C}
+/* 3D stage: as tall as the window allows next to the header and the play bar (--ui-chrome, per layout), at most the
+   620px it was drawn for; on a short stage the model shrinks to fit (skin-viewer.js) */
+:root{--ui-chrome:268px;--stage-h:clamp(320px,calc(100vh - var(--ui-chrome)),620px)}
+.scroll-y{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.15) transparent}
+/* ---- Settings → Интерфейс: main-screen layout. Classes on the root come from uiClasses() in launcher.logic.js,
+   blocks are marked with data-ui. Inline styles in the markup win over plain rules, hence !important. ---- */
+/* the window height taken by everything but the stage: a top bar adds 78px, a launch bar out of the flow frees 108px */
+.ui-root{--stage-h:clamp(320px,calc(100vh - var(--ui-chrome)),620px)}
+.ui-sb-top{--ui-chrome:346px}
+.ui-launch-float{--ui-chrome:160px}
+.ui-sb-top.ui-launch-float{--ui-chrome:238px}
+/* header buttons keep to the right even when the page title is hidden */
+.hd-ctrls{margin-left:auto}
+/* sidebar: on the right, or a toolbar on top (the active tab keeps its label) */
+.ui-sb-right .ui-shell{flex-direction:row-reverse}
+.ui-sb-top .ui-shell{flex-direction:column;flex-wrap:nowrap}
+.ui-sb-top main{flex:1 1 0!important}
+.ui-sb-top [data-ui=sidebar]{flex:none!important;align-self:stretch!important;flex-direction:row!important;align-items:center;gap:10px!important;padding:8px 10px!important;border-radius:18px!important;max-height:none!important;overflow:visible!important}
+.ui-sb-top .sb-nav{flex-direction:row!important;margin:0!important;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.ui-sb-top .sb-logo{padding:0 4px!important}
+.ui-sb-top .sb-logo span,.ui-sb-top .sb-sep,.ui-sb-top .sb-ver{display:none!important}
+.ui-sb-top .sb-acts{margin:0!important}
+.ui-sb-top .nav{width:auto;min-height:44px;flex:none;padding:0 12px 0 4px}
+.ui-sb-top .nav .ico{width:32px;height:32px}
+.ui-sb-top .nav:not(.is-active){font-size:0;gap:0;padding:0 4px}
+.ui-sb-top .nav:hover,.ui-sb-icons .nav:hover{transform:none}
+/* sidebar as a thin strip of icons */
+.ui-sb-icons:not(.ui-sb-top) [data-ui=sidebar]{flex:0 0 76px!important;padding:14px 8px!important}
+.ui-sb-icons .sb-logo{justify-content:center;padding:4px 0 0!important}
+.ui-sb-icons .sb-logo span,.ui-sb-icons .sb-ver{display:none!important}
+.ui-sb-icons .nav{position:relative;font-size:0;gap:0;justify-content:center;padding:0;min-height:44px}
+.ui-sb-icons:not(.ui-sb-top) .sb-nav{margin-top:12px!important}
+.ui-sb-icons .nav .nbadge{position:absolute;top:6px;right:6px;min-width:0;width:9px;height:9px;padding:0;font-size:0;border-radius:50%}
+.ui-sb-icons .side-act,.ui-sb-top .side-act{font-size:0;gap:0;min-height:44px;padding:0}
+.ui-sb-top .side-act{width:44px}
+/* see-through panels: the background and the player stay in view */
+.ui-glass [data-ui=sidebar]{background:rgba(12,16,21,0.38)!important}
+.ui-glass [data-ui=launch]{background:rgba(13,17,23,0.42)!important}
+/* launch bar: full width (classic), centred, on the right, or floating in the corner */
+.ui-launch-center [data-ui=launch]{align-self:center;width:min(880px,100%);justify-content:center!important}
+.ui-launch-right [data-ui=launch]{align-self:flex-end;width:min(760px,100%);justify-content:flex-end!important}
+.ui-launch-float [data-ui=launch]{position:fixed!important;right:24px;bottom:24px;width:min(620px,calc(100vw - 48px));flex-wrap:nowrap!important;padding:10px!important;gap:10px!important;border-radius:20px!important}
+.ui-launch-float [data-ui=version],.ui-launch-float [data-ui=launch] .play{min-width:0}
+.ui-launch-float [data-ui=launch] .play{padding:0 16px!important;gap:10px!important}
+.ui-launch-float [data-ui=launch] .play span{white-space:nowrap}
+.ui-launch-float [data-ui=launch] .play>span:last-child>span:first-child{font-size:16px!important}
+.ui-launch-float [data-ui=launch] .play{height:60px!important;flex-basis:220px!important}
+.ui-launch-float [data-ui=version]{flex-basis:200px!important}
+.ui-launch-mono [data-ui=launch]{gap:6px!important;padding:6px!important;border-radius:24px!important}
+.ui-launch-mono [data-ui=launch] .play{border-radius:18px!important}
+/* the player: left or right of the stage row (the background re-aims its path at the feet) */
+.ui-stage-left [data-ui=stage],.ui-stage-right [data-ui=stage]{flex:0 1 52%!important}
+.ui-stage-right [data-ui=stage]{order:2;margin-left:auto}
+/* hidden blocks; while editing they stay as faded ghosts so they can be brought back */
+.ui-root:not(.ui-editing).ui-hide-title [data-ui=title],.ui-root:not(.ui-editing).ui-hide-sound [data-ui=sound],
+.ui-root:not(.ui-editing).ui-hide-notifications [data-ui=notifications],.ui-root:not(.ui-editing).ui-hide-account [data-ui=account],
+.ui-root:not(.ui-editing).ui-hide-stage [data-ui=stage],.ui-root:not(.ui-editing).ui-hide-version [data-ui=version],
+.ui-root:not(.ui-editing).ui-hide-console [data-ui=console],.ui-root:not(.ui-editing).ui-hide-badges .nbadge{display:none!important}
+.ui-editing.ui-hide-title [data-ui=title],.ui-editing.ui-hide-sound [data-ui=sound],.ui-editing.ui-hide-notifications [data-ui=notifications],
+.ui-editing.ui-hide-account [data-ui=account],.ui-editing.ui-hide-stage [data-ui=stage],.ui-editing.ui-hide-version [data-ui=version],
+.ui-editing.ui-hide-console [data-ui=console]{opacity:.32;filter:grayscale(1)}
+/* dragged blocks leave the layout and stay where they were put (x, y in % of the window) */
+.ui-free-sidebar [data-ui=sidebar],.ui-free-title [data-ui=title],.ui-free-sysIcons [data-ui=sysIcons],.ui-free-account [data-ui=account],
+.ui-free-stage [data-ui=stage],.ui-free-launch [data-ui=launch]{position:fixed!important;right:auto!important;bottom:auto!important;margin:0!important;z-index:45}
+.ui-free-sidebar [data-ui=sidebar]{left:var(--ui-sidebar-x)!important;top:var(--ui-sidebar-y)!important;width:264px;max-height:calc(100vh - 16px)!important}
+.ui-free-sidebar.ui-sb-icons [data-ui=sidebar]{width:76px}
+.ui-free-sidebar.ui-sb-top [data-ui=sidebar]{width:auto;max-width:calc(100vw - 16px)}
+.ui-free-title [data-ui=title]{left:var(--ui-title-x)!important;top:var(--ui-title-y)!important}
+.ui-free-sysIcons [data-ui=sysIcons]{left:var(--ui-sysIcons-x)!important;top:var(--ui-sysIcons-y)!important}
+.ui-free-account [data-ui=account]{left:var(--ui-account-x)!important;top:var(--ui-account-y)!important}
+.ui-free-stage [data-ui=stage]{left:var(--ui-stage-x)!important;top:var(--ui-stage-y)!important;width:min(560px,50vw)}
+.ui-free-launch [data-ui=launch]{left:var(--ui-launch-x)!important;top:var(--ui-launch-y)!important;width:min(760px,calc(100vw - 32px))}
+/* edit mode: dashed frames with a name, hide/return chips, drag with an 8 px grid */
+.ui-edit-layer{position:fixed;inset:0;z-index:95;pointer-events:none}
+.ui-box{position:absolute;pointer-events:auto;border:2px dashed rgba(127,227,161,0.85);border-radius:14px;background:rgba(91,208,122,0.06);cursor:grab;touch-action:none;transition:background .15s,border-color .15s}
+.ui-box:hover{background:rgba(91,208,122,0.12)}
+.ui-box.is-fixed{cursor:default;border-style:dotted;border-color:rgba(255,255,255,0.45);background:transparent}
+.ui-box.is-hidden{border-color:rgba(242,153,139,0.85);background:rgba(242,153,139,0.07)}
+.ui-box.dragging{cursor:grabbing;background:rgba(91,208,122,0.16);transition:none}
+.ui-badge{position:absolute;left:8px;top:-11px;max-width:calc(100% - 16px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;color:#08130C;background:#7FE3A1;pointer-events:none}
+.ui-box.is-fixed .ui-badge{color:#ECEFF3;background:rgba(17,22,29,0.92);border:1px solid rgba(255,255,255,0.2)}
+.ui-box.is-hidden .ui-badge{background:#F2998B}
+.ui-chip{position:absolute;right:6px;bottom:6px;min-height:26px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.18);background:rgba(17,22,29,0.94);color:#ECEFF3;font-size:12px;cursor:pointer}
+.ui-chip:hover{background:#1F2731}
+.ui-editbar{position:fixed;left:50%;top:48px;transform:translateX(-50%);z-index:96;pointer-events:auto;display:flex;align-items:center;gap:10px;padding:8px 8px 8px 16px;border-radius:16px;background:rgba(17,22,29,0.95);border:1px solid rgba(127,227,161,0.35);box-shadow:0 24px 48px -20px rgba(0,0,0,0.9);font-size:13px;color:#C9D0DA;white-space:nowrap}
+.ui-editbar button{min-height:36px;padding:0 14px}
+.ui-sb-top .ui-editbar{top:126px}
+/* small blocks: the name may stick out, the chip sits under the frame */
+.ui-box.is-small .ui-badge{max-width:none}
+.ui-box.is-small .ui-chip{right:auto;bottom:auto;left:50%;top:calc(100% + 6px);transform:translateX(-50%)}
+/* layout presets in Settings → Интерфейс */
+.ui-presets{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.ui-mini{position:relative;display:block;height:78px;border-radius:10px;overflow:hidden;background:linear-gradient(160deg,#3a4a3a,#1c2620 60%,#2b2a20);border:1px solid rgba(255,255,255,0.08)}
+.ui-mini i{position:absolute;display:block;border-radius:3px;background:rgba(236,239,243,0.55)}
+.ui-opt{display:flex;flex-direction:column;gap:8px}
+.ui-opt>span{font-size:13px;color:#C9D0DA}
 *,*::before,*::after{box-sizing:border-box}
 a{color:#7FD08F;text-decoration:none}a:hover{color:#A9E6B6}
 button,input,select{font:inherit;color:inherit}
@@ -138,14 +235,6 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 .snote.warn{color:#F0C27A;background:rgba(240,185,90,0.08);border-color:rgba(240,185,90,0.25)}
 .dircard{display:flex;align-items:center;gap:14px;padding:14px;border-radius:12px;background:rgba(0,0,0,0.22);border:1px solid rgba(255,255,255,0.05)}
 .dir-ico{width:58px;height:58px;border-radius:14px;display:grid;place-items:center;flex:none;background:rgba(242,194,91,0.12);border:1px solid rgba(242,194,91,0.25);box-shadow:0 12px 24px -14px rgba(242,194,91,0.6)}
-.ped3-top{position:absolute;left:-170px;top:-170px;width:340px;height:340px;border-radius:50%;transform:rotateX(90deg);background:radial-gradient(circle at 50% 45%,rgba(255,255,255,0.22),rgba(225,246,234,0.1) 55%,rgba(150,225,180,0.16) 100%);border:1.5px solid rgba(255,255,255,0.4);box-shadow:inset 0 0 34px rgba(91,208,122,0.28),inset 0 0 0 7px rgba(255,255,255,0.04);backface-visibility:hidden;-webkit-backface-visibility:hidden}
-.ped3-side{position:absolute;left:-15.2px;top:0;width:30.4px;height:22px;background:linear-gradient(180deg,rgba(225,250,235,0.34),rgba(91,208,122,0.42) 65%,rgba(91,208,122,0.7));border-top:1px solid rgba(255,255,255,0.6);box-shadow:0 0 16px rgba(91,208,122,0.4);backface-visibility:hidden;-webkit-backface-visibility:hidden}
-.ped3-glow{position:absolute;left:-250px;top:-250px;width:500px;height:500px;border-radius:50%;transform:translateY(34px) rotateX(90deg);background:radial-gradient(closest-side,rgba(91,208,122,0.55),rgba(91,208,122,0.16) 55%,rgba(91,208,122,0));filter:blur(10px)}
-.ped3-ring{position:absolute;inset:24px;border-radius:50%;border:1px solid rgba(255,255,255,0.24)}
-.ped3-ring2{position:absolute;inset:62px;border-radius:50%;border:1px dashed rgba(91,208,122,0.4)}
-.ped3-tick{position:absolute;left:50%;top:50%;width:4px;height:12px;margin:-6px 0 0 -2px;border-radius:2px;background:rgba(170,242,198,0.8);box-shadow:0 0 8px rgba(91,208,122,0.9)}
-.ped3-shadow{position:absolute;left:50%;top:50%;width:160px;height:110px;margin:-55px 0 0 -80px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,0.5),rgba(0,0,0,0))}
-.ped3-logo{position:absolute;left:50%;bottom:20px;margin-left:-15px;opacity:0.9;filter:drop-shadow(0 0 6px rgba(91,208,122,0.8))}
 .shop-card{display:flex;flex-direction:column;border-radius:20px;overflow:hidden;background:rgba(18,22,29,0.72);border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.05),0 24px 48px -30px rgba(0,0,0,0.9)}
 .shop-art{position:relative;height:184px;overflow:hidden;border-bottom:1px solid rgba(255,255,255,0.08);background:#0B0E13}
 .shop-art img,.shop-art svg{transition:transform .6s ease}
@@ -165,6 +254,8 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 .ai-head{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,0.07)}
 .ai-ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;background:linear-gradient(135deg,#2ecc71,#27ae60);color:#04210F;box-shadow:0 10px 24px -10px rgba(46,204,113,0.75)}
 .ai-status{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:999px;background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.3);color:#7FE3A6;font-size:12px;font-weight:600}
+.ai-status.off{background:rgba(242,153,139,0.1);border-color:rgba(242,153,139,0.35);color:#F2998B}
+.ai-status.off .dot{background:#F2998B;animation:none}
 .ai-status .dot{width:8px;height:8px;border-radius:50%;background:#2ecc71;animation:aiPulse 2s ease-in-out infinite}
 @keyframes aiPulse{0%,100%{box-shadow:0 0 0 2px rgba(46,204,113,0.3)}50%{box-shadow:0 0 0 6px rgba(46,204,113,0)}}
 .ai-prompt{flex:none;display:flex;flex-direction:column;gap:10px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.05)}
@@ -211,11 +302,11 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </helmet>
-<div ref="{{rootRef}}" class="{{rootCls}}" onPointerMove="{{onRootMove}}" onClickCapture="{{onAnyClick}}" onMouseOverCapture="{{onAnyHover}}" style="position: relative; min-height: 100vh; width: 100%; background: transparent; color: #ECEFF3; font-family: 'Onest', system-ui, sans-serif; font-size: 14px">
+<div ref="{{rootRef}}" class="{{rootCls}}" onPointerMove="{{onRootMove}}" onClickCapture="{{onAnyClick}}" onMouseOverCapture="{{onAnyHover}}" style="position: relative; height: 100vh; overflow: hidden; width: 100%; background: transparent; color: #ECEFF3; font-family: 'Onest', system-ui, sans-serif; font-size: 14px">
 
 <div ref="{{bgLayerRef}}" aria-hidden="true" style="position: fixed; inset: -12px; z-index: 0; will-change: transform">
 <sc-if value="{{bgIsDefault}}" hint-placeholder-val="{{true}}">
-<img src="/assets/img/bg-shader-sunset.webp" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+<img ref="{{bgImgRef}}" src="/assets/img/bg.jpg" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center bottom">
 </sc-if>
 <sc-if value="{{bgIsImage}}" hint-placeholder-val="{{false}}">
 <img src="{{bgFileUrl}}" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
@@ -241,15 +332,15 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 <button class="tb-btn close" aria-label="Закрыть" data-sfx="none" onClick="{{winClose}}"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="currentColor" stroke-width="1.2"></path></svg></button>
 </span>
 </div>
-<div style="position: relative; display: flex; flex-wrap: wrap; gap: 16px; padding: 56px 16px 16px; min-height: 100vh; align-items: stretch">
+<div class="ui-shell" style="position: relative; display: flex; flex-wrap: wrap; gap: 16px; padding: 56px 16px 16px; height: 100vh; align-items: stretch">
 
-<aside class="glass" style="flex: 1 1 264px; align-self: flex-start; border-radius: 22px; padding: 18px 12px 14px; display: flex; flex-direction: column; gap: 4px; background: rgba(12,16,21,0.7)">
-<div style="display: flex; align-items: center; gap: 12px; padding: 4px 8px 0">
+<aside class="glass scroll-y" data-ui="sidebar" style="flex: 1 1 264px; align-self: flex-start; max-height: 100%; border-radius: 22px; padding: 18px 12px 14px; display: flex; flex-direction: column; gap: 4px; background: rgba(12,16,21,0.7)">
+<div class="sb-logo" style="display: flex; align-items: center; gap: 12px; padding: 4px 8px 0">
 <svg width="36" height="36" viewBox="0 0 34 34" aria-hidden="true" style="flex: none"><path d="M17 3L29.12 10L17 17L4.88 10Z" fill="#7FE3A1"></path><path d="M4.88 10L17 17V31L4.88 24Z" fill="#3FA35C"></path><path d="M17 17L29.12 10V24L17 31Z" fill="#2A8040"></path><path d="M11.91 14.06L17 11.12V17L11.91 19.94Z" fill="#2A8040"></path><path d="M22.09 14.06L17 11.12V17L22.09 19.94Z" fill="#3FA35C"></path><path d="M17 17L22.09 19.94L17 22.88L11.91 19.94Z" fill="#7FE3A1"></path></svg>
 <span style="font-family: 'Unbounded', sans-serif; font-weight: 500; font-size: 16px; white-space: nowrap; line-height: 1">Signal <span style="color: #8A94A3">Launcher</span></span>
 </div>
 
-<nav aria-label="Разделы лаунчера" style="display: flex; flex-direction: column; gap: 3px; margin-top: 20px">
+<nav class="sb-nav" aria-label="Разделы лаунчера" style="display: flex; flex-direction: column; gap: 3px; margin-top: 20px">
 <button data-hover="1" class="nav {{nav.play}}" onClick="{{go.play}}"><span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="7" width="19" height="11" rx="5.5"></rect><path d="M7 11v3M5.5 12.5h3M15.5 12h.01M18 13.5h.01"></path></svg></span>Игра</button>
 <button data-hover="1" class="nav {{nav.news}}" onClick="{{go.news}}"><span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h13v14H6a2 2 0 0 1-2-2z"></path><path d="M17 9h3v8a2 2 0 0 1-2 2"></path><path d="M8 9h5M8 13h5M8 16h3"></path></svg></span>Новости<sc-if value="{{hasNewsBadge}}" hint-placeholder-val="{{false}}"><span class="nbadge">{{newsBadge}}</span></sc-if></button>
 <button data-hover="1" class="nav {{nav.installs}}" onClick="{{go.installs}}"><span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5 9-5z"></path><path d="M3 13l9 5 9-5"></path><path d="M3 17.5l9 5 9-5"></path></svg></span>Установки</button>
@@ -261,26 +352,26 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 <button data-hover="1" class="nav {{nav.worlds}}" onClick="{{go.worlds}}"><span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"></path></svg></span>Миры</button>
 </nav>
 
-<div style="height: 1px; background: rgba(255,255,255,0.07); margin: 10px 6px"></div>
+<div class="sb-sep" style="height: 1px; background: rgba(255,255,255,0.07); margin: 10px 6px"></div>
 
-<div style="display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin-bottom: 8px">
+<div class="sb-acts" style="display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin-bottom: 8px">
 <button data-hover="1" class="side-act" onClick="{{openGameDir}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>Папка игры</button>
 </div>
-<div style="height: 1px; background: rgba(255,255,255,0.07); margin: 2px 6px 8px"></div>
+<div class="sb-sep" style="height: 1px; background: rgba(255,255,255,0.07); margin: 2px 6px 8px"></div>
 <button data-hover="1" class="nav {{nav.settings}}" onClick="{{go.settings}}"><span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"></path><circle cx="16" cy="6" r="2"></circle><circle cx="10" cy="12" r="2"></circle><circle cx="18" cy="18" r="2"></circle></svg></span>Настройки</button>
-<div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 10px 0; font-size: 12px; color: #8A94A3">
+<div class="sb-ver" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 10px 0; font-size: 12px; color: #8A94A3">
 <span style="font-family: 'JetBrains Mono', monospace">Signal v{{appVersion}}</span>
 </div>
 </aside>
 
-<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<main style="flex: 999 1 560px; min-width: 0; min-height: 0; max-height: 100%; display: flex; flex-direction: column; gap: 16px">
 
 <header style="position: relative; z-index: 40; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px">
-<div style="min-width: 0">
+<div data-ui="title" style="min-width: 0">
 <h1 style="margin: 0; font-family: 'Unbounded', sans-serif; font-weight: 600; font-size: 22px; letter-spacing: 0.01em">{{pageTitle}}</h1>
 <sc-if value="{{hasPageSub}}" hint-placeholder-val="{{false}}"><p style="margin: 6px 0 0; color: #8A94A3; font-size: 13px">{{pageSub}}</p></sc-if>
 </div>
-<div style="display: flex; align-items: center; gap: 10px">
+<div class="hd-ctrls" style="display: flex; align-items: center; gap: 10px">
 <div style="position: relative">
 
 <sc-if value="{{friendsOpen}}" hint-placeholder-val="{{false}}">
@@ -341,11 +432,12 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 </div>
 </sc-if>
 </div>
-<button class="ghost icon-btn" aria-label="Звуки интерфейса" aria-pressed="{{soundOn}}" data-sfx="toggle" onClick="{{toggleSound}}" style="height: 56px; width: 56px; border-radius: 16px">
+<div data-ui="sysIcons" style="display: flex; align-items: center; gap: 10px">
+<button class="ghost icon-btn" data-ui="sound" aria-label="Звуки интерфейса" aria-pressed="{{soundOn}}" data-sfx="toggle" onClick="{{toggleSound}}" style="height: 56px; width: 56px; border-radius: 16px">
 <sc-if value="{{soundOn}}" hint-placeholder-val="{{true}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"></path><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"></path></svg></sc-if>
 <sc-if value="{{soundOff}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"></path><path d="M16 9.5l5 5M21 9.5l-5 5"></path></svg></sc-if>
 </button>
-<div style="position: relative">
+<div data-ui="notifications" style="position: relative">
 <button class="ghost icon-btn" aria-label="{{bellLabel}}" aria-haspopup="dialog" aria-expanded="{{notifOpen}}" data-sfx="open" onClick="{{toggleNotifs}}" style="height: 56px; width: 56px; border-radius: 16px; position: relative">
 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"></path><path d="M10 20a2 2 0 0 0 4 0"></path></svg>
 <sc-if value="{{hasUnread}}" hint-placeholder-val="{{false}}"><span style="position: absolute; top: 15px; right: 16px; width: 8px; height: 8px; border-radius: 50%; background: #5BD07A; box-shadow: 0 0 0 2px #10151C"></span></sc-if>
@@ -375,7 +467,8 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 </div>
 </sc-if>
 </div>
-<div style="position: relative">
+</div>
+<div data-ui="account" style="position: relative">
 <button class="acct" data-hover="1" data-sfx="open" onClick="{{toggleAcc}}" aria-haspopup="menu" aria-expanded="{{accMenu}}">
 <span style="display: block; width: 36px; height: 36px; border-radius: 9px; overflow: hidden; flex: none; padding: 2px; background: rgba(255,255,255,0.06)"><span style="display: block; width: 32px; height: 32px; border-radius: 7px; overflow: hidden"><span style="display: block; width: 4px; height: 4px; background: {{cur.bg}}; box-shadow: {{cur.sh4}}"></span></span></span>
 <span style="display: flex; flex-direction: column; gap: 3px; min-width: 120px">
@@ -432,40 +525,26 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 </div>
 </header>
 
-<section style="flex: 1; display: flex; flex-direction: column; gap: 16px">
+<section class="scroll-y" style="flex: 1; display: flex; flex-direction: column; gap: 16px">
 
 <sc-if value="{{showStage}}" hint-placeholder-val="{{true}}">
-<div class="rise" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
-<div style="position: relative; flex: 1 1 440px; min-width: 0">
-<div ref="{{stageRef}}" class="stage" onPointerDown="{{dragStart}}" onPointerMove="{{dragMove}}" onPointerUp="{{dragEnd}}" onPointerCancel="{{dragEnd}}" onDoubleClick="{{openSkin}}" aria-label="3D-модель игрока" style="position: relative; width: 100%; height: 620px; perspective: 1400px; cursor: grab; touch-action: none; user-select: none">
+<div class="rise ui-stage-row" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+<div data-ui="stage" style="position: relative; flex: 1 1 440px; min-width: 0; overflow: clip">
+<div ref="{{stageRef}}" class="stage" onPointerDown="{{dragStart}}" onPointerMove="{{dragMove}}" onPointerUp="{{dragEnd}}" onPointerCancel="{{dragEnd}}" onDoubleClick="{{openSkin}}" aria-label="3D-модель игрока" style="position: relative; width: 100%; height: var(--stage-h); perspective: 1400px; cursor: grab; touch-action: none; user-select: none">
 <div ref="{{modelRef}}" class="p3" style="top: 290px; transform: rotateX(-6deg) rotateY(0deg)">
-<div class="p3" aria-hidden="true" style="transform: translate3d(0px, 199px, 0px)">
-<div class="ped3-glow"></div>
-<sc-for list="{{pedSides}}" as="sd" hint-placeholder-count="36">
-<div class="ped3-side" style="transform: rotateY({{sd.a}}deg) translateZ(169.5px)"></div>
-</sc-for>
-<div class="ped3-top">
-<div class="ped3-ring"></div>
-<div class="ped3-ring2"></div>
-<sc-for list="{{pedTicks}}" as="tk" hint-placeholder-count="12">
-<span class="ped3-tick" style="transform: rotate({{tk.a}}deg) translateY(-150px)"></span>
-</sc-for>
-<div class="ped3-shadow"></div>
-<svg class="ped3-logo" width="30" height="30" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 3L30 10L17 17L4 10Z" fill="#9BE8AE"></path><path d="M4 10L17 17V31L4 24Z" fill="#5BD07A"></path><path d="M30 10L17 17V31L30 24Z" fill="#2A8040"></path></svg>
-</div>
-</div>
 </div>
 <div ref="{{viewerRef}}" aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none"></div>
 </div>
 </div>
 
 <sc-if value="{{isCosmetics}}" hint-placeholder-val="{{false}}">
-<section class="scard" aria-labelledby="h-cos" style="flex: 1 1 380px; max-width: 560px">
+<section class="scard" aria-labelledby="h-cos" style="flex: 1 1 380px; max-width: 560px; max-height: var(--stage-h)">
 <div class="scard-h">
 <span class="scard-ico" style="background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(91,208,122,0.18)); color: #D7C8FF; border-color: rgba(157,107,255,0.3)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"></path></svg></span>
 <span class="scard-t" style="flex: 1"><h2 id="h-cos">Гардероб косметики</h2><span>Нажмите на предмет — он сразу появится на игроке</span></span>
 <span class="{{cosSyncBadgeCls}}">{{cosSyncBadge}}</span>
 </div>
+<div class="scroll-y" style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 18px; padding: 2px; margin: -2px">
 <div class="snote">
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
 <span style="display: flex; flex-direction: column; gap: 4px"><span>{{cosSyncNote}}</span><sc-if value="{{hasCosSyncErr}}" hint-placeholder-val="{{false}}"><span style="color: #F2998B">{{cosSyncErr}}</span></sc-if></span>
@@ -474,7 +553,7 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 <button class="ghost" data-sfx="close" onClick="{{cosClear}}" style="flex: 1">Снять всё</button>
 <button class="accent" onClick="{{cosSave}}" style="background: {{accent}}; flex: 1">{{cosSaveLabel}}</button>
 </div>
-<div role="tablist" aria-label="Категории" style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 13px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08)">
+<div role="tablist" aria-label="Категории" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 4px; padding: 4px; border-radius: 13px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08)">
 <sc-for list="{{cosTabs}}" as="ct" hint-placeholder-count="3">
 <button class="seg {{ct.cls}}" role="tab" aria-selected="{{ct.on}}" onClick="{{ct.pick}}">{{ct.label}}</button>
 </sc-for>
@@ -495,6 +574,7 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 <div class="snote">
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
 <span>{{cosSummary}}</span>
+</div>
 </div>
 </section>
 </sc-if>
@@ -1014,7 +1094,83 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 <button class="seg {{stBgCls}}" role="tab" aria-selected="{{stBg}}" onClick="{{setStBg}}" style="min-height: 44px; padding: 0 18px">Кастомизация фона</button>
 <button class="seg {{stGameCls}}" role="tab" aria-selected="{{stGame}}" onClick="{{setStGame}}" style="min-height: 44px; padding: 0 18px">Игра и Графика</button>
 <button class="seg {{stSysCls}}" role="tab" aria-selected="{{stSys}}" onClick="{{setStSys}}" style="min-height: 44px; padding: 0 18px">Система и Лаунчер</button>
+<button class="seg {{stUiCls}}" role="tab" aria-selected="{{stUi}}" onClick="{{setStUi}}" style="min-height: 44px; padding: 0 18px">Интерфейс</button>
 </div>
+
+<sc-if value="{{stUi}}" hint-placeholder-val="{{false}}">
+<div class="sgrid">
+<section class="scard" aria-labelledby="h-layout" style="grid-column: 1 / -1">
+<div class="scard-h">
+<span class="scard-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M9 15h12"></path></svg></span>
+<span class="scard-t" style="flex: 1"><h2 id="h-layout">Раскладка главного экрана</h2><span>Готовые варианты или своя: блоки можно двигать, прятать и возвращать</span></span>
+<sc-if value="{{uiCustom}}" hint-placeholder-val="{{false}}"><span class="nbadge" style="background: rgba(240,185,90,0.16); color: #F0B95A">Пользовательский</span></sc-if>
+</div>
+<div class="ui-presets" role="radiogroup" aria-label="Пресеты раскладки">
+<sc-for list="{{uiPresets}}" as="p" hint-placeholder-count="3">
+<button class="{{p.cls}}" role="radio" aria-checked="{{p.on}}" onClick="{{p.pick}}" data-sfx="toggle">
+<span class="ui-mini" aria-hidden="true"><sc-for list="{{p.mini}}" as="r" hint-placeholder-count="3"><i style="left: {{r.l}}%; top: {{r.t}}%; width: {{r.w}}%; height: {{r.h}}%; opacity: {{r.o}}"></i></sc-for></span>
+<span style="font-weight: 600; font-size: 14px; color: #ECEFF3">{{p.label}}</span>
+<span style="font-size: 12px; color: #8A94A3; line-height: 1.4">{{p.desc}}</span>
+</button>
+</sc-for>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 10px">
+<button class="accent" data-sfx="open" onClick="{{uiEdit}}" style="background: {{accent}}">Настроить расположение элементов</button>
+<button class="ghost" data-sfx="close" onClick="{{uiReset}}">Сбросить по умолчанию</button>
+</div>
+<sc-if value="{{uiHasFree}}" hint-placeholder-val="{{false}}">
+<div class="snote" style="align-items: center"><span style="flex: 1">{{uiFreeNote}}</span><button class="ghost" onClick="{{uiUnpin}}" style="flex: none">Вернуть в раскладку</button></div>
+</sc-if>
+</section>
+<section class="scard" aria-labelledby="h-anchor">
+<div class="scard-h">
+<span class="scard-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M3 12h18"></path><circle cx="12" cy="12" r="3"></circle></svg></span>
+<span class="scard-t"><h2 id="h-anchor">Привязка блоков</h2><span>Где стоят меню, панель запуска и персонаж</span></span>
+</div>
+<div class="ui-opt"><span>Боковое меню</span>
+<div role="radiogroup" aria-label="Боковое меню" style="display: inline-flex; flex-wrap: wrap; align-self: flex-start; gap: 4px; padding: 4px; border-radius: 13px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08)">
+<sc-for list="{{uiSidebarOpts}}" as="o" hint-placeholder-count="3"><button class="{{o.cls}}" role="radio" aria-checked="{{o.on}}" onClick="{{o.pick}}" data-sfx="toggle">{{o.label}}</button></sc-for>
+</div>
+</div>
+<button class="{{uiIcons.rowCls}}" aria-pressed="{{uiIcons.on}}" data-sfx="toggle" onClick="{{uiIcons.toggle}}">
+<span class="trow-t"><span>Меню только иконками</span><span>Узкая полоса без подписей; сверху подпись остаётся у открытого раздела</span></span>
+<span class="{{uiIcons.swCls}}"></span>
+</button>
+<div class="ui-opt"><span>Панель запуска</span>
+<div role="radiogroup" aria-label="Панель запуска" style="display: inline-flex; flex-wrap: wrap; align-self: flex-start; gap: 4px; padding: 4px; border-radius: 13px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08)">
+<sc-for list="{{uiLaunchOpts}}" as="o" hint-placeholder-count="3"><button class="{{o.cls}}" role="radio" aria-checked="{{o.on}}" onClick="{{o.pick}}" data-sfx="toggle">{{o.label}}</button></sc-for>
+</div>
+</div>
+<button class="{{uiMono.rowCls}}" aria-pressed="{{uiMono.on}}" data-sfx="toggle" onClick="{{uiMono.toggle}}">
+<span class="trow-t"><span>Панель запуска одним блоком</span><span>Выбор версии и «Играть» плотно рядом</span></span>
+<span class="{{uiMono.swCls}}"></span>
+</button>
+<div class="ui-opt"><span>Персонаж на сцене</span>
+<div role="radiogroup" aria-label="Персонаж на сцене" style="display: inline-flex; flex-wrap: wrap; align-self: flex-start; gap: 4px; padding: 4px; border-radius: 13px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08)">
+<sc-for list="{{uiStageOpts}}" as="o" hint-placeholder-count="3"><button class="{{o.cls}}" role="radio" aria-checked="{{o.on}}" onClick="{{o.pick}}" data-sfx="toggle">{{o.label}}</button></sc-for>
+</div>
+</div>
+<button class="{{uiGlass.rowCls}}" aria-pressed="{{uiGlass.on}}" data-sfx="toggle" onClick="{{uiGlass.toggle}}">
+<span class="trow-t"><span>Полупрозрачные панели</span><span>Меню и панель запуска пропускают фон</span></span>
+<span class="{{uiGlass.swCls}}"></span>
+</button>
+</section>
+<section class="scard" aria-labelledby="h-vis">
+<div class="scard-h">
+<span class="scard-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></span>
+<span class="scard-t"><h2 id="h-vis">Видимость</h2><span>Что показывать на главном экране</span></span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{uiVisible}}" as="v" hint-placeholder-count="6">
+<button class="{{v.rowCls}}" aria-pressed="{{v.on}}" data-sfx="toggle" onClick="{{v.toggle}}">
+<span class="trow-t"><span>{{v.label}}</span></span>
+<span class="{{v.swCls}}"></span>
+</button>
+</sc-for>
+</div>
+</section>
+</div>
+</sc-if>
 
 <sc-if value="{{stBg}}" hint-placeholder-val="{{true}}">
 <div class="sgrid">
@@ -1022,7 +1178,7 @@ input[type=range]{width:100%;accent-color:#3FAE5A;height:28px;margin:0}
 <h2 style="margin: 0; font-family: 'Unbounded', sans-serif; font-weight: 600; font-size: 15px">Фон лаунчера</h2>
 <div style="display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08)">
 <span style="width: 112px; height: 64px; border-radius: 10px; overflow: hidden; flex: none; background: {{bgThumbFill}}; border: 1px solid rgba(255,255,255,0.12)">
-<sc-if value="{{bgThumbDefault}}" hint-placeholder-val="{{true}}"><img src="/assets/img/bg-shader-sunset.webp" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block"></sc-if>
+<sc-if value="{{bgThumbDefault}}" hint-placeholder-val="{{true}}"><img src="/assets/img/bg.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover; object-position: center bottom; display: block"></sc-if>
 <sc-if value="{{bgThumbCustom}}" hint-placeholder-val="{{false}}"><img src="{{bgFileUrl}}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block"></sc-if>
 </span>
 <span style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
@@ -1261,6 +1417,11 @@ Aikar's Flags
 <span class="trow-t"><span>Мой скин в офлайн-игре</span><span>Скин из лаунчера виден в игре без модов: через ресурс-пак, который включается при запуске</span></span>
 <span class="{{tg.offlineSkin.swCls}}"></span>
 </button>
+<button class="{{tg.companion.rowCls}}" aria-pressed="{{tg.companion.on}}" data-sfx="toggle" onClick="{{tg.companion.toggle}}">
+<span class="trow-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.4 7.2 17.9l.9-5.4-3.9-3.8 5.4-.8z"></path></svg></span>
+<span class="trow-t"><span>Signal Companion</span><span>Косметика и значки Signal в игре (Fabric): мод ставится в установку при запуске, без него — убирается</span></span>
+<span class="{{tg.companion.swCls}}"></span>
+</button>
 <button class="{{tg.backup.rowCls}}" aria-pressed="{{tg.backup.on}}" data-sfx="toggle" onClick="{{tg.backup.toggle}}">
 <span class="trow-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"></path><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg></span>
 <span class="trow-t"><span>Автобэкап миров</span><span>{{backupDesc}}</span></span>
@@ -1325,9 +1486,9 @@ Aikar's Flags
 </sc-if>
 </section>
 
-<div class="glass" style="position: sticky; bottom: 16px; z-index: 40; border-radius: 22px; padding: 14px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; background: rgba(13,17,23,0.78)">
+<div class="glass" data-ui="launch" style="position: sticky; bottom: 16px; z-index: 40; border-radius: 22px; padding: 14px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; background: rgba(13,17,23,0.78)">
 
-<div style="position: relative; flex: 1 1 300px; max-width: 460px">
+<div data-ui="version" style="position: relative; flex: 1 1 300px; max-width: 460px">
 <button class="verbtn" data-hover="1" data-sfx="open" onClick="{{toggleVer}}" aria-haspopup="listbox" aria-expanded="{{verMenu}}">
 <span style="width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex: none; overflow: hidden; background: rgba(255,255,255,0.05)">
 <sc-if value="{{ver.hasIcon}}" hint-placeholder-val="{{false}}"><img src="{{ver.iconSrc}}" alt="" class="inst-icon"></sc-if>
@@ -1365,7 +1526,7 @@ Aikar's Flags
 </sc-if>
 </div>
 
-<button class="ghost icon-btn console-btn" data-sfx="open" onClick="{{toggleConsole}}" aria-label="Консоль игры" title="Консоль игры"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M7 9l3 3-3 3M12 15h5"></path></svg></button>
+<button class="ghost icon-btn console-btn" data-ui="console" data-sfx="open" onClick="{{toggleConsole}}" aria-label="Консоль игры" title="Консоль игры"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M7 9l3 3-3 3M12 15h5"></path></svg></button>
 
 <button class="play" data-hover="1" data-sfx="launch" onClick="{{launch}}" aria-live="polite" style="position: relative; overflow: hidden; flex: 1 1 320px; max-width: 440px; height: 76px; border-radius: 20px; background: linear-gradient(135deg, {{accentHi}} 0%, {{accent}} 55%, {{accentLo}} 100%); color: #FFFFFF; text-shadow: 0 1px 2px rgba(0,0,0,0.35); box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), inset 0 -4px 0 rgba(0,0,0,0.2), 0 0 36px {{accentGlow}}, 0 18px 40px -16px {{accentGlow}}; padding: 0 26px; display: flex; align-items: center; justify-content: center; gap: 14px">
 <span style="position: absolute; left: 0; top: 0; bottom: 0; width: {{progress}}%; background: rgba(255,255,255,0.2); transition: width .12s linear"></span>
@@ -1383,8 +1544,24 @@ Aikar's Flags
 </main>
 </div>
 
+<sc-if value="{{uiEditing}}" hint-placeholder-val="{{false}}">
+<div class="ui-edit-layer">
+<sc-for list="{{uiBoxes}}" as="b" hint-placeholder-count="5">
+<div class="{{b.cls}}" style="left: {{b.x}}px; top: {{b.y}}px; width: {{b.w}}px; height: {{b.h}}px" onPointerDown="{{b.drag}}">
+<span class="ui-badge">{{b.label}}</span>
+<sc-if value="{{b.canHide}}" hint-placeholder-val="{{false}}"><button class="ui-chip" data-sfx="toggle" onClick="{{b.toggle}}">{{b.toggleLabel}}</button></sc-if>
+</div>
+</sc-for>
+<div class="ui-editbar" role="toolbar" aria-label="Редактор раскладки">
+<span>Перетаскивайте блоки за рамку · сетка 8 px · Esc — выход</span>
+<button class="ghost" data-sfx="close" onClick="{{uiReset}}">Сбросить</button>
+<button class="accent" data-sfx="done" onClick="{{uiDone}}" style="background: {{accent}}">Готово</button>
+</div>
+</div>
+</sc-if>
+
 <sc-if value="{{modalOpen}}" hint-placeholder-val="{{false}}">
-<div style="position: absolute; inset: 0; z-index: 60; background: rgba(4,6,9,0.62); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: flex; justify-content: center; align-items: flex-start; padding: 110px 16px 16px">
+<div style="position: absolute; inset: 0; z-index: 60; overflow-y: auto; background: rgba(4,6,9,0.62); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: flex; justify-content: center; align-items: flex-start; padding: 110px 16px 16px">
 <div class="pop" role="dialog" aria-modal="true" aria-labelledby="add-title" style="width: 100%; max-width: 480px; background: rgba(17,22,29,0.97); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 22px; box-shadow: 0 40px 80px -24px rgba(0,0,0,0.85); display: flex; flex-direction: column; gap: 18px">
 <div style="display: flex; align-items: center; gap: 10px">
 <sc-if value="{{notChoose}}" hint-placeholder-val="{{false}}">
@@ -1456,9 +1633,9 @@ Aikar's Flags
 </div>
 <div style="display: flex; flex-direction: column; gap: 8px">
 <label for="nick" style="font-size: 13px; color: #C9D0DA">Никнейм</label>
-<input id="nick" class="field" value="{{nick}}" onChange="{{onNick}}" placeholder="Например, Builder_42" maxLength="16" autoComplete="off" spellcheck="false" style="font-size: 15px">
+<input id="nick" class="field" value="{{nick}}" onChange="{{onNick}}" onKeyDown="{{onNickKey}}" placeholder="Например, Builder_42" maxLength="16" autoComplete="off" spellcheck="false" style="font-size: 15px">
 <span style="font-size: 12px; color: {{nickHintColor}}">{{nickHint}}</span>
-<span role="status" style="font-size: 12px; color: {{nickSkinColor}}">{{nickSkinNote}}</span>
+<span style="font-size: 12px; color: #8A94A3">Скин подтянется по нику из Mojang или Ely.by сразу после добавления.</span>
 </div>
 <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #8A94A3">Офлайн-аккаунт не может заходить на лицензионные серверы. Скин виден только у вас в игре: другие игроки на серверах его не увидят.</p>
 <button class="accent" disabled="{{nickInvalid}}" onClick="{{addOffline}}" style="background: {{accent}}; min-height: 48px; font-size: 15px">Добавить аккаунт</button>
@@ -1476,7 +1653,7 @@ Aikar's Flags
 <div class="ai-head">
 <span class="ai-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"></path></svg></span>
 <span class="scard-t" style="flex: 1"><h2 id="h-ai">Собрать с ИИ</h2><span>Опишите идею — нейросеть подберёт совместимые моды</span></span>
-<span class="ai-status"><span class="dot"></span>ИИ подключен</span>
+<span class="{{aiStatusCls}}"><span class="dot"></span>{{aiStatusText}}</span>
 <button class="ghost icon-btn" aria-label="Закрыть" data-sfx="close" onClick="{{closeAi}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
 </div>
 
@@ -1530,6 +1707,7 @@ Aikar's Flags
 <span class="tagchip" style="color: {{aiSourceColor}}">{{aiSourceLabel}}</span>
 </span>
 </div>
+<sc-if value="{{hasAiNote}}" hint-placeholder-val="{{false}}"><div class="snote" role="status">{{aiNote}}</div></sc-if>
 <sc-for list="{{aiGroups}}" as="g" hint-placeholder-count="3">
 <div class="ai-group">
 <div class="ai-group-h"><span>{{g.title}}</span><span>{{g.count}}</span></div>
@@ -1538,7 +1716,7 @@ Aikar's Flags
 <button class="{{am.cls}}" aria-pressed="{{am.checked}}" disabled="{{dlBusy}}" onClick="{{am.toggle}}" data-sfx="toggle">
 <span class="{{am.ckCls}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#04210F" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span>
 <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
-<span style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><span style="font-weight: 600; font-size: 14px; color: #ECEFF3">{{am.name}}</span><span class="tagchip" style="height: 20px; font-size: 11px; font-weight: 500">{{am.category}}</span></span>
+<span style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><span style="font-weight: 600; font-size: 14px; color: #ECEFF3">{{am.name}}</span><span class="tagchip" style="height: 20px; font-size: 11px; font-weight: 500">{{am.category}}</span><sc-if value="{{am.hasSrc}}" hint-placeholder-val="{{false}}"><span class="tagchip" style="height: 20px; font-size: 11px; color: {{am.srcColor}}">{{am.srcLabel}}</span></sc-if></span>
 <span style="font-size: 12px; line-height: 1.45; color: #A3ADBB">{{am.description}}</span>
 </span>
 <span style="flex: none; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8A94A3">{{am.size}}</span>

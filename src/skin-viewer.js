@@ -8,8 +8,10 @@ import { createAura } from './aura-particles.js';
 const DEG = Math.PI / 180;
 // Cosmetic .glb files are authored at 1 skin pixel = 1/16 m with their origin on the bone pivot.
 const GLB_SCALE = 16;
-// Wardrobe slot -> bone socket. Face items ride on the head so they turn with it.
-const SLOT_SOCKET = { hat: 'head', face: 'head', back: 'body', pet: 'shoulderL' };
+// Wardrobe slot -> bone socket for a bare url without an attach point. Face items ride on the head so they turn with it.
+const SLOT_SOCKET = { hat: 'head', head: 'head', ears: 'head', face: 'head', pet: 'shoulder_left', shoulders: 'shoulder_left' };
+// Catalog attach points (docs/companion-api.md); each is a socket on the matching joint.
+const ATTACH = ['head', 'body', 'cape', 'shoulder_left', 'arm_left', 'arm_right', 'leg_left', 'leg_right'];
 
 // Box UVs in the 64x64 skin layout. BoxGeometry face order: +x, -x, +y, -y, +z, -z; the player faces +z,
 // so +x is the player's left side and -x the right side.
@@ -68,6 +70,31 @@ function capeGeometry() {
   return geo;
 }
 
+// Soft contact shadow lying on the ground under the soles: an ellipse of black fading to nothing.
+// The soles are 18 skin px below the body centre (rig origin); the shadow sits a hair lower. The camera
+// looks at the ground almost edge-on (6° tilt), so the oval is long front to back to read as ~200×35 px.
+function groundShadow() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d');
+  const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grad.addColorStop(0, 'rgba(0,0,0,0.5)');
+  grad.addColorStop(0.45, 'rgba(0,0,0,0.32)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 128, 128);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(18, 30),
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false })
+  );
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.position.y = -18.05;
+  mesh.renderOrder = -1;
+  return mesh;
+}
+
 function pixelTexture(url) {
   const tex = new THREE.TextureLoader().load(url);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -76,9 +103,37 @@ function pixelTexture(url) {
   return tex;
 }
 
+// A cloned glTF scene shares materials and textures with the cached original, so each flipbook material
+// gets its own copy (and its own offset) before the strip is stepped. Returns [{ tex, frames, fps }].
+function flipbooks(obj) {
+  const out = [];
+  obj.traverse((child) => {
+    if (!child.isMesh) return;
+    const one = (m) => {
+      const frames = m.userData && m.userData.sl_frames;
+      if (!(frames > 1)) return m;
+      m = m.clone();
+      ['map', 'emissiveMap'].forEach((k) => {
+        if (!m[k]) return;
+        m[k] = m[k].clone();
+        out.push({ tex: m[k], frames, fps: m.userData.sl_fps || 12 });
+      });
+      return m;
+    };
+    child.material = Array.isArray(child.material) ? child.material.map(one) : one(child.material);
+  });
+  return out;
+}
+
 export class SkinViewer {
-  constructor({ scale = 11, originY = 290, perspective = 1400 } = {}) {
+  // originY: rig origin (body centre) below the host's top; feetFromBottom instead keeps the soles that far
+  // above the host's bottom whatever its height, and a host too short for the player shrinks the model so the
+  // head (14 skin px above the origin) still clears the top.
+  constructor({ scale = 11, originY = 290, feetFromBottom = null, perspective = 1400 } = {}) {
     this.originY = originY;
+    this.feetFromBottom = feetFromBottom;
+    this.scale = scale;
+    this.maxScale = scale;
     this.perspective = perspective;
     this.t = 0;
     this.pose = 'idle';
@@ -86,7 +141,7 @@ export class SkinViewer {
     this.view = { angle: 0, tilt: -6, yaw: 0, pitch: 0 };
     this.loader = new GLTFLoader();
     this.glbCache = new Map();
-    this.attached = {};   // slot -> { url, object }
+    this.attached = {};   // slot -> { key, objects: [{ socket, object }] }
     this.loadToken = {};
 
     const r = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -111,6 +166,9 @@ export class SkinViewer {
     this.root = new THREE.Group();
     this.root.scale.setScalar(scale);
     scene.add(this.root);
+    // on the rig root, not the body: it stays on the ground while the player breathes and walks
+    this.shadow = groundShadow();
+    this.root.add(this.shadow);
     this.skinTex = null;
     this.baseMat = new THREE.MeshLambertMaterial();
     this.layerMat = new THREE.MeshLambertMaterial({ alphaTest: 0.5, side: THREE.DoubleSide });
@@ -143,12 +201,20 @@ export class SkinViewer {
     Object.keys(joints).forEach((n) => { if (n !== 'body') joints.body.add(joints[n]); });
     this.root.add(joints.body);
     // sockets survive a Classic/Slim rebuild together with whatever is attached to them
-    if (!this.sockets) this.sockets = { head: new THREE.Group(), body: new THREE.Group(), cape: new THREE.Group(), shoulderL: new THREE.Group() };
-    joints.head.add(this.sockets.head);                                            // neck pivot
-    this.sockets.body.position.set(0, 6, 0); joints.body.add(this.sockets.body);   // neck, torso bone
-    this.sockets.cape.position.set(0, 6, -2); joints.body.add(this.sockets.cape);  // top of the back
+    if (!this.sockets) this.sockets = Object.fromEntries(ATTACH.map((a) => [a, new THREE.Group()]));
+    const k = this.sockets;
+    joints.head.add(k.head);                                            // neck pivot
+    k.body.position.set(0, 6, 0); joints.body.add(k.body);              // neck, torso bone
+    k.cape.position.set(0, 6, -2); joints.body.add(k.cape);             // top of the back
     // left shoulder perch on the torso (not the arm, so pets don't swing with it); SOCKET_shoulder_left in Blender
-    this.sockets.shoulderL.position.set(7, 6, 0); joints.body.add(this.sockets.shoulderL);
+    k.shoulder_left.position.set(7, 6, 0); joints.body.add(k.shoulder_left);
+    // Limb sockets sit on the vanilla rig pivots, which differ from this model's joints: arms (+-5, 22) for
+    // classic and (+-5, 21.5) for slim, legs (+-1.9, 12); the body centre is at rig height 18.
+    const ax = slim ? 0.5 : 1, ay = slim ? -1.5 : -1;
+    k.arm_left.position.set(-ax, ay, 0); joints.larm.add(k.arm_left);
+    k.arm_right.position.set(ax, ay, 0); joints.rarm.add(k.arm_right);
+    k.leg_left.position.set(-0.1, 0, 0); joints.lleg.add(k.leg_left);
+    k.leg_right.position.set(0.1, 0, 0); joints.rleg.add(k.leg_right);
     this.joints = joints; this.meshes = meshes; this.layers = layers;
     this.setLayerVisible(this.showLayer !== false);
   }
@@ -171,6 +237,11 @@ export class SkinViewer {
     const cam = this.camera;
     cam.aspect = w / h;
     cam.fov = 2 * Math.atan(h / 2 / this.perspective) / DEG;
+    if (this.feetFromBottom != null) {
+      this.scale = Math.max(4, Math.min(this.maxScale, (h - this.feetFromBottom - 24) / 32));
+      this.root.scale.setScalar(this.scale);
+      this.originY = h - this.feetFromBottom - 18 * this.scale;
+    }
     // CSS projects toward the stage centre; the model origin sits originY px below the stage top
     cam.position.set(0, this.originY - h / 2, this.perspective);
     cam.updateProjectionMatrix();
@@ -206,23 +277,46 @@ export class SkinViewer {
     return this.glbCache.get(url);
   }
 
-  // Put a .glb into a wardrobe slot ('hat' | 'face' | 'back' | 'pet'); url null empties the slot.
-  setAccessory(slot, url) {
+  // Put an item into a wardrobe slot. parts: [{ attach, url }] (one .glb per bone, e.g. boots on both legs),
+  // or a bare url that goes on the slot's default socket; null empties the slot.
+  setAccessory(slot, parts) {
+    if (typeof parts === 'string') parts = [{ attach: SLOT_SOCKET[slot] || 'body', url: parts }];
+    parts = (parts || []).filter((p) => p && p.url);
+    const key = parts.map((p) => p.attach + '=' + p.url).join('|') || null;
     const cur = this.attached[slot];
-    if ((cur ? cur.url : null) === url) return;
-    const socket = this.sockets[SLOT_SOCKET[slot]];
-    if (cur) { socket.remove(cur.object); delete this.attached[slot]; }
+    if ((cur ? cur.key : null) === key) return;
+    if (cur) cur.objects.forEach(({ socket, object }) => socket.remove(object));
+    delete this.attached[slot];
+
     const token = (this.loadToken[slot] || 0) + 1;
     this.loadToken[slot] = token;
-    if (!url) return;
-    this.attached[slot] = { url, object: new THREE.Group() };
-    this.loadGlb(url).then((gltf) => {
+    if (!key) return;
+    this.attached[slot] = { key, objects: [] };
+    // all parts appear together, so a pair of boots never shows up one leg at a time
+    Promise.all(parts.map((p) => this.loadGlb(p.url))).then((gltfs) => {
       if (this.loadToken[slot] !== token) return;
-      const obj = gltf.scene.clone(true);
-      obj.scale.setScalar(GLB_SCALE);
-      socket.add(obj);
-      this.attached[slot] = { url, object: obj };
-    }).catch((e) => console.warn('[skin-viewer] cannot load', url, e));
+      const objects = gltfs.map((gltf, i) => {
+        const socket = this.sockets[parts[i].attach] || this.sockets.body;
+        const object = gltf.scene.clone(true);
+        object.scale.setScalar(GLB_SCALE);
+        object.userData.flipbooks = flipbooks(object);
+        socket.add(object);
+        return { socket, object };
+      });
+      this.attached[slot] = { key, objects };
+    }).catch((e) => console.warn('[skin-viewer] cannot load', key, e));
+  }
+
+  // Flipbook strips (material extras sl_frames/sl_fps from entity_geo_to_glb.py): UVs sit on the first frame,
+  // the texture offset steps one frame down the strip. glTF textures are not flipped, so +v goes down the image.
+  stepFlipbooks(t) {
+    for (const slot in this.attached) {
+      this.attached[slot].objects.forEach(({ object }) => {
+        object.userData.flipbooks.forEach(({ tex, frames, fps }) => {
+          tex.offset.y = (Math.floor(t * fps) % frames) / frames;
+        });
+      });
+    }
   }
 
   // spec: { key, texture: 64x32 cape png, emissive: matching glow map or null } or null
@@ -315,6 +409,7 @@ export class SkinViewer {
       u.uTime.value = t;
       u.uScale.value = this.pointScale || 1;
     }
+    this.stepFlipbooks(t);
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -325,6 +420,7 @@ export class SkinViewer {
     if (this.skinTex) this.skinTex.dispose();
     this.root.traverse((o) => { if (o.isMesh && o.userData.skinPart) o.geometry.dispose(); });
     this.baseMat.dispose(); this.layerMat.dispose();
+    this.shadow.geometry.dispose(); this.shadow.material.map.dispose(); this.shadow.material.dispose();
     if (this.scene.environment) this.scene.environment.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
