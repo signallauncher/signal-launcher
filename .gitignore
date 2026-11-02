@@ -17,3 +17,7 @@ __pycache__/
 # Packs imported locally (default prefix bb) stay on this machine; the repository keeps only the published cosmetics.
 public/assets/cosmetics/models/bb_*
 public/assets/cosmetics/icons/bb_*
+
+# installers copied out of src-tauri/target for local testing
+/*-setup.exe
+/*.msi

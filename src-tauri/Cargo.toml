@@ -1,6 +1,6 @@
 [package]
 name = "signal-launcher"
-version = "0.2.0"
+version = "0.3.0"
 description = "Signal Launcher — Minecraft launcher"
 authors = ["Signal Launcher"]
 edition = "2021"
