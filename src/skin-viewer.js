@@ -95,6 +95,26 @@ function groundShadow() {
   return mesh;
 }
 
+// Light moods for the backgrounds. `sunset` matches bg.jpg: a warm sun from the upper right (~41° up),
+// a cool blue fill from the left so the shadow side keeps its volume, and the sky glowing behind.
+// `neutral` is plain daylight for every other background.
+const LIGHT_MOODS = {
+  neutral: {
+    env: 0.55,
+    hemi: { sky: 0xf2f5ff, ground: 0x30363f, i: 1.6 },
+    key: { c: 0xfff4e8, i: 2.2, p: [-300, 500, 700] },
+    rim: { c: 0x9be8ae, i: 1.4, p: [250, 300, -600] },
+    fill: { c: 0x4a5a78, i: 0, p: [-500, 120, 250] }
+  },
+  sunset: {
+    env: 0.35,
+    hemi: { sky: 0xffcf9a, ground: 0x262b38, i: 0.9 },
+    key: { c: 0xffb259, i: 2.8, p: [420, 500, 380] },
+    rim: { c: 0xff8a3d, i: 1.3, p: [150, 260, -600] },
+    fill: { c: 0x4a5a78, i: 1.5, p: [-500, 120, 250] }
+  }
+};
+
 function pixelTexture(url) {
   const tex = new THREE.TextureLoader().load(url);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -157,9 +177,14 @@ export class SkinViewer {
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environmentIntensity = 0.55;
     pmrem.dispose();
-    scene.add(new THREE.HemisphereLight(0xf2f5ff, 0x30363f, 1.6));
+    // sky light, key, rim from behind and a fill from the shadow side; setLighting() moves them to a mood
+    const hemi = new THREE.HemisphereLight(0xf2f5ff, 0x30363f, 1.6); scene.add(hemi);
     const key = new THREE.DirectionalLight(0xfff4e8, 2.2); key.position.set(-300, 500, 700); scene.add(key);
     const rim = new THREE.DirectionalLight(0x9be8ae, 1.4); rim.position.set(250, 300, -600); scene.add(rim);
+    const fill = new THREE.DirectionalLight(0x4a5a78, 0); fill.position.set(-500, 120, 250); scene.add(fill);
+    this.lights = { hemi, key, rim, fill };
+    this.lightMood = null;
+    this.lightTarget = null;
     this.scene = scene;
     this.camera = new THREE.PerspectiveCamera(30, 1, 10, 6000);
 
@@ -373,6 +398,34 @@ export class SkinViewer {
     if (this.aura) this.root.add(this.aura);   // child of the rig root: it turns with the player, not with the breath
   }
 
+  // 'sunset' | 'neutral' (LIGHT_MOODS); the lights glide there over a few frames, the first one is set at once.
+  setLighting(mood) {
+    const m = LIGHT_MOODS[mood] || LIGHT_MOODS.neutral;
+    if (m === this.lightTarget) return;
+    const first = !this.lightTarget;
+    this.lightTarget = m;
+    this.lightMood = mood;
+    if (first) this.stepLights(1);
+  }
+
+  stepLights(k) {
+    const m = this.lightTarget, L = this.lights;
+    if (!m) return;
+    const tmp = new THREE.Color();
+    L.hemi.color.lerp(tmp.set(m.hemi.sky), k);
+    L.hemi.groundColor.lerp(tmp.set(m.hemi.ground), k);
+    L.hemi.intensity += (m.hemi.i - L.hemi.intensity) * k;
+    ['key', 'rim', 'fill'].forEach((n) => {
+      const l = L[n], t = m[n];
+      l.color.lerp(tmp.set(t.c), k);
+      l.intensity += (t.i - l.intensity) * k;
+      l.position.x += (t.p[0] - l.position.x) * k;
+      l.position.y += (t.p[1] - l.position.y) * k;
+      l.position.z += (t.p[2] - l.position.z) * k;
+    });
+    this.scene.environmentIntensity += (m.env - this.scene.environmentIntensity) * k;
+  }
+
   setView(angle, tilt, yaw, pitch) {
     this.view = { angle, tilt, yaw, pitch };
   }
@@ -410,6 +463,7 @@ export class SkinViewer {
       u.uScale.value = this.pointScale || 1;
     }
     this.stepFlipbooks(t);
+    this.stepLights(1 - Math.exp(-(dt || 16) / 250));
     this.renderer.render(this.scene, this.camera);
   }
 

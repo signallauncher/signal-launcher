@@ -108,6 +108,8 @@ function uiNormalize(u) {
     hide: hide, pos: pos
   };
 }
+// Shortest repeat of one interface sound, ms (default 80).
+const SFX_GAP = { hover: 60, place: 70, done: 400 };
 // Calls into the desktop backend go through window.SignalBridge (see src/main.js).
 export default function defineLogic(DCLogic) {
 class Component extends DCLogic {
@@ -292,19 +294,24 @@ class Component extends DCLogic {
   componentDidMount() {
     const src = {
       hover: '/assets/sfx/hover.webm',
-      click: '/assets/sfx/click.webm',
+      // Minecraft's own sounds: a wooden button for buttons and tabs, a stone button for switches and
+      // presets, a quiet block placement when a block snaps to the grid in the layout editor, and the
+      // experience orb when something is done (download finished, game started)
+      click: '/assets/sfx/mc-wood-click.ogg',
+      toggle: '/assets/sfx/mc-stone-click.ogg',
+      place: '/assets/sfx/mc-place.ogg',
+      done: '/assets/sfx/mc-orb.ogg',
       open: '/assets/sfx/open.webm',
       close: '/assets/sfx/close.webm',
-      toggle: '/assets/sfx/toggle.webm',
-      launch: '/assets/sfx/launch.webm',
-      done: '/assets/sfx/done.webm'
+      launch: '/assets/sfx/launch.webm'
     };
+    const volume = { hover: 0.3, place: 0.22, click: 0.45, toggle: 0.4, done: 0.45 };
     this.sfx = {};
     try {
       Object.keys(src).forEach((k) => {
         const a = new Audio(src[k]);
         a.preload = 'auto';
-        a.volume = k === 'hover' ? 0.3 : 0.5;
+        a.volume = volume[k] || 0.5;
         this.sfx[k] = a;
       });
     } catch (e) {}
@@ -550,8 +557,10 @@ class Component extends DCLogic {
     frame.classList.add('dragging');
     const move = (ev) => {
       const w = el.offsetWidth, h = el.offsetHeight;
+      const px = x, py = y;
       x = Math.max(0, Math.min(W - w, snap(r.left + ev.clientX - e.clientX)));
       y = Math.max(0, Math.min(H - h, snap(r.top + ev.clientY - e.clientY)));
+      if (x !== px || y !== py) this.play('place');
       put(x, y);
       frame.style.left = x + 'px';
       frame.style.top = y + 'px';
@@ -718,6 +727,8 @@ class Component extends DCLogic {
     const d = this.cosDefs();
     v.setSkin(s.skinUrl || DEFAULT_SKIN, s.slim);
     v.setLayerVisible(s.showLayer);
+    // the default background (bg.jpg, a sunset) lights the player like the scene; any other one, daylight
+    v.setLighting(s.bgMode === 'image' || (s.bgMode === 'file' && !s.bgFileUrl) ? 'sunset' : 'neutral');
     v.setPose(s.pose);
     v.setAnimate(s.opts.animations && !this.reduceMotion);
     COS_SLOTS.forEach(([slot]) => {
@@ -756,13 +767,21 @@ class Component extends DCLogic {
     this.headPitch += (pitch - this.headPitch) * k;
   }
 
+  // Interface sound (the speaker button in the header switches them off). A kind plays at most once per
+  // SFX_GAP ms, so a burst of clicks or a fast drag in the editor stays one sound per beat.
   play(kind) {
     if (!this.state.opts.sound || !this.sfx) return;
     const a = this.sfx[kind];
     if (!a) return;
+    const now = performance.now();
+    const last = this.sfxAt || (this.sfxAt = {});
+    if (now - (last[kind] || -Infinity) < (SFX_GAP[kind] || 80)) return;
+    last[kind] = now;
     try {
       const c = a.cloneNode();
       c.volume = a.volume;
+      // the orb and block placement vary in pitch, as in the game
+      if (kind === 'done' || kind === 'place') { c.preservesPitch = false; c.playbackRate = 0.85 + Math.random() * 0.3; }
       const p = c.play();
       if (p && p.catch) p.catch(() => {});
     } catch (e) {}
