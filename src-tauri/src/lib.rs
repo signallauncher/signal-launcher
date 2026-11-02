@@ -247,7 +247,16 @@ async fn install_mods(
 async fn install_loader(app: tauri::AppHandle, instance_id: String, version: String) -> Result<Option<String>, String> {
     let progress = game::Progress::new(app, "mods-progress");
     progress.set_span(Some((90.0, 99.0)));
-    game::install_loader(&progress, &instance_id, &version).await
+    let build = game::install_loader(&progress, &instance_id, &version).await?;
+    progress.step("fabric-api", "Fabric API…", 100.0);
+    mods::ensure_fabric_api(&instance_id, &version).await?;
+    Ok(build)
+}
+
+/// «Новая установка» with Fabric: Fabric API goes into mods/ right away. Returns the downloaded file, if any.
+#[tauri::command]
+async fn ensure_fabric_api(instance_id: String, version: String) -> Result<Option<String>, String> {
+    mods::ensure_fabric_api(&instance_id, &version).await
 }
 
 #[tauri::command]
@@ -765,6 +774,7 @@ pub fn run() {
             open_folder,
             install_mods,
             install_loader,
+            ensure_fabric_api,
             list_mods,
             remove_mod,
             set_mod_enabled,

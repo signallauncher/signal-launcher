@@ -382,6 +382,54 @@ fn primary_file(version: &Value) -> Option<RemoteFile> {
     })
 }
 
+/// Fabric API on Modrinth.
+const FABRIC_API: &str = "P7dR8mSH";
+
+/// Whether a jar is Fabric API: the file name, or `"id": "fabric-api"` in its fabric.mod.json
+/// (a renamed or re-hosted copy counts too).
+fn is_fabric_api(jar: &Path) -> bool {
+    let name = jar.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
+    if name.starts_with("fabric-api-") {
+        return true;
+    }
+    let Ok(file) = fs::File::open(jar) else { return false };
+    let Ok(mut zip) = zip::ZipArchive::new(file) else { return false };
+    let Ok(mut entry) = zip.by_name("fabric.mod.json") else { return false };
+    let mut text = String::new();
+    std::io::Read::read_to_string(&mut entry, &mut text).is_ok()
+        && serde_json::from_str::<Value>(&text).ok().and_then(|v| v.get("id")?.as_str().map(|id| id == "fabric-api")) == Some(true)
+}
+
+/// Every Fabric installation gets Fabric API in mods/ when it is created: almost every Fabric mod needs
+/// it, and an AI pack whose downloads failed would otherwise start with an empty folder. A copy that is
+/// already there (also a disabled one) is kept. Returns the file it downloaded; `None` for other loaders.
+pub async fn ensure_fabric_api(instance_id: &str, version_label: &str) -> Result<Option<String>, String> {
+    let (loader, game_version) = game::parse_label(version_label);
+    let (Loader::Fabric, Some(game_version)) = (loader, game_version) else {
+        return Ok(None);
+    };
+    let mods_dir = game::instance_dir(instance_id).join("mods");
+    fs::create_dir_all(&mods_dir).map_err(|e| format!("{}: {e}", mods_dir.display()))?;
+    let present = fs::read_dir(&mods_dir)
+        .map(|rd| {
+            rd.filter_map(|e| e.ok()).map(|e| e.path()).any(|p| {
+                let n = p.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
+                (n.ends_with(".jar") || n.ends_with(".jar.disabled")) && is_fabric_api(&p)
+            })
+        })
+        .unwrap_or(false);
+    if present {
+        return Ok(None);
+    }
+    let client = game::http_client()?;
+    let version = pick_version(&client, FABRIC_API, "fabric", &game_version)
+        .await?
+        .ok_or_else(|| format!("Fabric API для Minecraft {game_version} на Modrinth нет"))?;
+    let file = primary_file(&version).ok_or("У версии Fabric API нет файла")?;
+    game::download(&client, &file.url, &mods_dir.join(&file.filename), file.size).await?;
+    Ok(Some(file.filename))
+}
+
 /// `.jar` and `.jar.disabled` files in the installation's mods folder.
 pub fn list(instance_id: &str) -> Vec<ModFile> {
     let dir = game::instance_dir(instance_id).join("mods");
@@ -709,5 +757,58 @@ mod ai_tests {
         assert!(resembles("Sodium Extra", "Sodium Extra"));
         assert!(!resembles("Totally Fake Mod 9000", "Mod Menu"));
         assert!(!resembles("Better Shadows Overhaul", "Better Combat"));
+    }
+}
+
+#[cfg(test)]
+mod fabric_api_tests {
+    use super::*;
+    use std::io::Write;
+
+    fn jar(path: &Path, mod_json: &str) {
+        let mut zip = zip::ZipWriter::new(fs::File::create(path).unwrap());
+        zip.start_file("fabric.mod.json", zip::write::SimpleFileOptions::default()).unwrap();
+        zip.write_all(mod_json.as_bytes()).unwrap();
+        zip.finish().unwrap();
+    }
+
+    #[test]
+    fn recognises_fabric_api_by_name_or_mod_id() {
+        let dir = std::env::temp_dir().join(format!("signal-fapi-test-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let renamed = dir.join("api.jar");
+        jar(&renamed, r#"{"schemaVersion":1,"id":"fabric-api","version":"0.92.2"}"#);
+        let other = dir.join("sodium.jar");
+        jar(&other, r#"{"schemaVersion":1,"id":"sodium"}"#);
+        let named = dir.join("fabric-api-0.92.2+1.20.1.jar");
+        fs::write(&named, b"not even a zip").unwrap();
+        assert!(is_fabric_api(&renamed));
+        assert!(is_fabric_api(&named));
+        assert!(!is_fabric_api(&other));
+        assert!(!is_fabric_api(&dir.join("missing.jar")));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    /// Downloads Fabric API from Modrinth into a throwaway installation, then finds it there:
+    /// `cargo test --lib live_ensure_fabric_api -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn live_ensure_fabric_api() {
+        let id = format!("test-fabric-api-{}", std::process::id());
+        let dir = game::instance_dir(&id);
+        let (first, second, vanilla) = tauri::async_runtime::block_on(async {
+            (
+                ensure_fabric_api(&id, "Fabric 1.20.1").await,
+                ensure_fabric_api(&id, "Fabric 1.20.1").await,
+                ensure_fabric_api(&id, "Release 1.20.1").await,
+            )
+        });
+        let files: Vec<String> = list(&id).into_iter().map(|f| f.file).collect();
+        let _ = fs::remove_dir_all(&dir);
+        println!("first: {first:?}, second: {second:?}, mods: {files:?}");
+        let first = first.unwrap().expect("Fabric API was not downloaded");
+        assert!(first.starts_with("fabric-api-") && files == vec![first.clone()]);
+        assert_eq!(second.unwrap(), None, "a second call must not download again");
+        assert_eq!(vanilla.unwrap(), None);
     }
 }

@@ -107,6 +107,10 @@ pub async fn import(app: AppHandle, path: String) -> Result<ImportReport, String
                     serde_json::json!({ "name": title, "version": index.version_id, "summary": index.summary }),
                 );
             });
+            // A Fabric pack without Fabric API gets it; a failed download never undoes the import.
+            if let Err(e) = crate::mods::ensure_fabric_api(&id, &info.label).await {
+                println!("[signal] mrpack {id}: Fabric API not added: {e}");
+            }
             progress.step("done", "Сборка установлена", 100.0);
             Ok(ImportReport {
                 instance_id: id,

@@ -507,6 +507,9 @@ pub async fn install_modpack(app: AppHandle, mod_id: &str) -> Result<CfImportRep
                 }
                 meta.insert("pack".into(), serde_json::json!({ "name": title, "version": manifest.version, "source": "curseforge", "projectId": mod_id }));
             });
+            if let Err(e) = crate::mods::ensure_fabric_api(&id, &label).await {
+                println!("[signal] curseforge pack {id}: Fabric API not added: {e}");
+            }
             progress.step("done", "Сборка установлена", 100.0);
             Ok(CfImportReport { instance_id: id, name: title, version: label, loader_version, files: counts.0, server_only: 0, overrides: counts.1, icon, blocked })
         }

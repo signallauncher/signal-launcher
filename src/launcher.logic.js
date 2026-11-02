@@ -1411,6 +1411,10 @@ class Component extends DCLogic {
         this.addInstance({ id: inst.id, name: name, version: inst.name });
         this.setState({ versionId: inst.id, niOpen: false });
         window.SignalBridge.createInstance({ id: inst.id, name: name, version: inst.name })
+          .then(() => (s.niLoader === 'fabric'
+            ? window.SignalBridge.ensureFabricApi({ instanceId: inst.id, version: inst.name })
+              .catch((e) => window.SignalBridge.toast(String(e), { kind: 'info', title: 'Fabric API не скачан, поставьте его из каталога модов' }))
+            : null))
           .then(() => this.loadInstances(false))
           .catch((e) => window.SignalBridge.toast(String(e), { kind: 'error', title: 'Папка установки не создана' }));
         this.play('done');
@@ -2872,36 +2876,63 @@ class Component extends DCLogic {
     this.setState({ dlBusy: true, dlDone: false, dlProgress: 0, dlStage: 'Поиск модов на Modrinth…' });
     const fromCf = mods.filter((mm) => mm.source === 'curseforge' && mm.projectId);
     const fromMr = mods.filter((mm) => !fromCf.includes(mm));
+    const onProgress = (p) => this.setState({ dlProgress: Math.max(this.state.dlProgress, p.percent), dlStage: p.label });
     window.SignalBridge.installMods({
       instanceId: id,
       instanceName: title,
       version: name,
       mods: fromMr.map((mm) => (mm.projectId ? { name: mm.name, projectId: mm.projectId } : { name: mm.name })),
-      onProgress: (p) => this.setState({ dlProgress: Math.max(this.state.dlProgress, p.percent), dlStage: p.label })
+      onProgress: onProgress
     })
       .then(async (report) => {
+        // A CurseForge mod counts only when its own jar came down; otherwise (no access, no file for this
+        // version, a file the author keeps on curseforge.com) the same name is looked for on Modrinth.
+        const cfFailed = [];
         for (const mm of fromCf) {
           this.setState({ dlStage: 'CurseForge: ' + mm.name + '…' });
           try {
             const cf = await window.SignalBridge.installCurseforge({ instanceId: id, instanceName: title, version: name, projectId: mm.projectId, kind: 'mod', title: mm.name });
-            report.installed = report.installed.concat((cf && cf.installed) || []);
-            report.skipped = report.skipped.concat((cf && cf.skipped) || []);
+            const installed = (cf && cf.installed) || [];
+            report.installed = report.installed.concat(installed);
+            if (installed.some((x) => !x.dependency)) report.skipped = report.skipped.concat((cf && cf.skipped) || []);
+            else cfFailed.push({ mm: mm, reason: ((cf && cf.skipped) || []).map((x) => x.reason).join(', ') || 'файл не скачан' });
           } catch (e) {
-            report.skipped.push({ name: mm.name, reason: String(e) });
+            cfFailed.push({ mm: mm, reason: String(e) });
           }
+        }
+        if (cfFailed.length) {
+          this.setState({ dlStage: 'CurseForge не отдал модов: ' + cfFailed.length + ', ищу их на Modrinth…' });
+          let alt = { installed: [], skipped: [] };
+          try {
+            alt = await window.SignalBridge.installMods({ instanceId: id, instanceName: title, version: name, mods: cfFailed.map((f) => ({ name: f.mm.name })), onProgress: onProgress });
+          } catch (e) {
+            console.warn('[signal] Modrinth fallback:', e);
+          }
+          report.installed = report.installed.concat(alt.installed);
+          const found = new Set(alt.installed.filter((x) => !x.dependency).map((x) => x.name));
+          cfFailed.filter((f) => !found.has(f.mm.name))
+            .forEach((f) => report.skipped.push({ name: f.mm.name, reason: 'CurseForge: ' + f.reason + '; на Modrinth замены нет' }));
         }
         // The loader and its libraries now, not at the first «Играть»: its build is pinned for these mods,
         // and a broken loader shows up here instead of as a crash on start.
         this.setState({ dlStage: r.loader + ' ' + r.version + ': установка загрузчика…' });
-        report.loaderVersion = await window.SignalBridge.installLoader({
-          instanceId: id,
-          version: name,
-          onProgress: (p) => this.setState({ dlProgress: Math.max(this.state.dlProgress, p.percent), dlStage: p.label })
-        });
+        report.loaderVersion = await window.SignalBridge.installLoader({ instanceId: id, version: name, onProgress: onProgress });
+        // What is really in mods/ decides: a file the report lists but the folder lacks is not installed,
+        // and a pack none of whose chosen mods came down is not a pack.
+        const files = await window.SignalBridge.listMods(id);
+        const onDisk = new Set(files.map((f) => f.file));
+        const lost = report.installed.filter((x) => x.file && !onDisk.has(x.file));
+        report.installed = report.installed.filter((x) => !lost.includes(x));
+        lost.forEach((x) => report.skipped.push({ name: x.name, reason: 'файл не появился в папке mods' }));
+        report.jars = files.filter((f) => f.enabled).length;
+        if (!report.installed.some((x) => !x.dependency)) {
+          await window.SignalBridge.deleteInstance(id).catch(() => {});
+          throw new Error('Ни один из выбранных модов не скачался, папка mods осталась пустой. Проверьте соединение и соберите ещё раз.');
+        }
         return report;
       })
       .then((report) => {
-        const n = report.installed.length;
+        const n = report.jars;
         const deps = report.installed.filter((x) => x.dependency).length;
         this.addInstance({ id: id, name: title, version: name, mods: n, loaderVersion: report.loaderVersion || null });
         this.setState({ dlBusy: false, dlDone: true, dlProgress: 100, dlStage: 'Готово', versionId: id });

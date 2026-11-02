@@ -251,6 +251,12 @@ window.SignalBridge = {
    * The installation's loader (Fabric/Forge/NeoForge) with its libraries, its build pinned in instance.json.
    * Progress arrives as `mods-progress` events. @returns {Promise<string|null>} the loader build
    */
+  // Fabric API into a new Fabric installation's mods/ (Rust: mods::ensure_fabric_api); the downloaded file or null.
+  async ensureFabricApi({ instanceId, version }) {
+    if (isTauri) return invoke('ensure_fabric_api', { instanceId, version });
+    return null;
+  },
+
   async installLoader({ instanceId, version, onProgress }) {
     if (!isTauri) {
       if (onProgress) onProgress({ label: 'Установка загрузчика…', percent: 95 });
