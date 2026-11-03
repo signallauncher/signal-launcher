@@ -1,24 +1,58 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
-src-tauri/target/
+build/
+target/
 src-tauri/gen/
-.env
+*.tsbuildinfo
+
+# Installers copied out of src-tauri/target for local testing
+/*-setup.exe
+/*.msi
+
+# Logs, dumps and temporary files
 *.log
-# Updater signing keys never go into the repository
+logs/
+*.dmp
+*.stackdump
+hs_err_pid*
+*.tmp
+*.temp
+*.part
+*.bak
+*.orig
+*.swp
+*~
+
+# Local environment and secrets (only .env.example is committed)
+.env
+.env.*
+!.env.example
+# Updater signing keys and the CurseForge API key never go into the repository
 *.key
 *.key.pub
+*.pem
 .tauri/
 
+# OS and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.code-workspace
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Local tooling
 .claude/
 skills-lock.json
-
 /website/
-__pycache__/
 
 # Packs imported locally (default prefix bb) stay on this machine; the repository keeps only the published cosmetics.
 public/assets/cosmetics/models/bb_*
 public/assets/cosmetics/icons/bb_*
-
-# installers copied out of src-tauri/target for local testing
-/*-setup.exe
-/*.msi
